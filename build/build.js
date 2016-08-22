@@ -6,10 +6,9 @@ var gulpWatch = require('gulp-watch');
 
 function transpile() {
   console.log("Transpiling to 'dist/bundle.js'...");
-  browserify(path.resolve(__dirname, '../src/index.js'))
-    .on('error', function(err) {
-      console.log("Error",err);
-    })
+  browserify(path.resolve(__dirname, '../src/index.js'), {
+    standalone: "sitekit"
+  })
     .transform(babelify.configure({
       presets: ["es2015"]
     }))

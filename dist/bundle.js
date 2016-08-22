@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.sitekit = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /*!
  * jQuery UI Keycode 1.12.0
  * http://jqueryui.com
@@ -10862,259 +10862,265 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var $ = window.jQuery = window.$ = require("jquery");
+var jQuery = require("jquery");
+var $ = jQuery;
+window.jQuery = $;
+window.$ = $;
 require("jquery-ui/ui/version");
 require("jquery-ui/ui/keycode");
 require("jquery-ui/ui/widget");
 
 var baseWidget = {
-	debounce: function debounce(callback, time, name) {
+  debounce: function debounce(callback, time, name) {
 
-		var self = this;
+    var self = this;
 
-		name = name || '_';
+    name = name || '_';
 
-		self._scheduledTimers = self._scheduledTimers || {};
+    self._scheduledTimers = self._scheduledTimers || {};
 
-		clearTimeout(this._scheduledTimers[name]);
+    clearTimeout(this._scheduledTimers[name]);
 
-		this._scheduledTimers[name] = setTimeout(function () {
-			callback.call(self);
-		}, time);
-	},
-	throttle: function throttle(callback, time, name, val) {
-		var _this = this;
+    this._scheduledTimers[name] = setTimeout(function () {
+      callback.call(self);
+    }, time);
+  },
+  throttle: function throttle(callback, time, name, val) {
+    var _this = this;
 
-		var self = this;
-		name = name || '_';
+    var self = this;
+    name = name || '_';
 
-		self._throttled = self._throttled || {};
-		self._scheduledTimers = self._scheduledTimers || {};
+    self._throttled = self._throttled || {};
+    self._scheduledTimers = self._scheduledTimers || {};
 
-		if (self._throttled[name] === undefined) {
-			clearTimeout(this._scheduledTimers[name]);
-			this._scheduledTimers[name] = setTimeout(function () {
-				_this._scheduledTimers[name] = null;
-				self._throttled[name] = undefined;
-			}, time);
-			self._throttled[name] = val;
-			callback();
-		}
-	},
-	afterInit: function afterInit(callback) {
-		var self = this;
-		$(document).bind('afterWidgetsInit.' + this.uuid, function () {
-			callback.call(self);
-			$(document).unbind('afterWidgetsInit.' + self.uuid);
-		});
-	},
-	instance: function instance() {
-		return this;
-	}
+    if (self._throttled[name] === undefined) {
+      clearTimeout(this._scheduledTimers[name]);
+      this._scheduledTimers[name] = setTimeout(function () {
+        _this._scheduledTimers[name] = null;
+        self._throttled[name] = undefined;
+      }, time);
+      self._throttled[name] = val;
+      callback();
+    }
+  },
+  afterInit: function afterInit(callback) {
+    var self = this;
+    $(document).bind('afterWidgetsInit.' + this.uuid, function () {
+      callback.call(self);
+      $(document).unbind('afterWidgetsInit.' + self.uuid);
+    });
+  },
+  instance: function instance() {
+    return this;
+  }
 };
 
 var Site = function () {
-	function Site() {
-		var _this2 = this;
+  function Site() {
+    var _this2 = this;
 
-		_classCallCheck(this, Site);
+    _classCallCheck(this, Site);
 
-		// Init dev mode
-		this.initLiveReload();
+    console.log("Hey");
 
-		this.components = {};
+    // Init dev mode
+    this.initLiveReload();
 
-		// Wait for DOM load
-		$(function () {
-			return _this2.domReady();
-		});
-	}
+    this.components = {};
 
-	_createClass(Site, [{
-		key: "domReady",
-		value: function domReady() {
+    // Wait for DOM load
+    $(function () {
+      return _this2.domReady();
+    });
+  }
 
-			this.initWidgets();
-		}
-	}, {
-		key: "initLiveReload",
-		value: function initLiveReload() {
+  _createClass(Site, [{
+    key: "domReady",
+    value: function domReady() {
 
-			if (navigator.appName != "Netscape" || !window.location.href.match(/(2016|ngrok)/)) {
-				return false;
-			}
+      this.initWidgets();
+    }
+  }, {
+    key: "initLiveReload",
+    value: function initLiveReload() {
 
-			var refresh = function refresh() {
-				return history.go(0);
-			};
+      if (navigator.appName != "Netscape" || !window.location.href.match(/(2016|ngrok)/)) {
+        return false;
+      }
 
-			var check = function check() {
-				$.ajax({
-					url: '/devcheck',
-					error: function error() {
-						// Failed, start checking again
-						setTimeout(check, 1000);
-					},
-					success: function success() {
-						// We got a response
-						refresh();
-					}
-				});
-			};
+      var refresh = function refresh() {
+        return history.go(0);
+      };
 
-			check();
-		}
-	}, {
-		key: "findWidgets",
-		value: function findWidgets(name, el) {
-			var result = [];
-			var widgets = $('[data-widget]', el || document.body).each(function (k, el) {
-				var widgetNames = $.data(el, 'widgetNames');
-				if (widgetNames && widgetNames.indexOf(name) != -1) {
-					var instance = $(el)[name]('instance');
-					result.push(instance);
-				}
-			});
-			return result;
-		}
-	}, {
-		key: "findWidget",
-		value: function findWidget(name, el) {
-			var widgets = this.findWidgets(name, el);
-			if (widgets && widgets.length) {
-				return widgets[0];
-			} else {
-				return null;
-			}
-		}
-	}, {
-		key: "getAllWidgets",
-		value: function getAllWidgets(el) {
-			var result = [];
-			var widgets = $('[data-widget]', el || document.body);
-			if (el) widgets = widgets.add(el);
-			// debugger;
-			widgets.each(function (k, el) {
-				var widgetNames = $.data(el, 'widgetNames');
-				for (var _k in widgetNames) {
-					var instance = $(el)[widgetNames[_k]]('instance');
-					if (instance) {
-						result.push(instance);
-					}
-				}
-			});
-			return result;
-		}
-	}, {
-		key: "triggerAllWidgets",
-		value: function triggerAllWidgets(methodName, target) {
+      var check = function check() {
+        $.ajax({
+          url: '/devcheck',
+          error: function error() {
+            // Failed, start checking again
+            setTimeout(check, 1000);
+          },
+          success: function success() {
+            // We got a response
+            refresh();
+          }
+        });
+      };
 
-			var args = Array.prototype.slice.call(arguments, 2);
+      check();
+    }
+  }, {
+    key: "findWidgets",
+    value: function findWidgets(name, el) {
+      var result = [];
+      var widgets = $('[data-widget]', el || document.body).each(function (k, el) {
+        var widgetNames = $.data(el, 'widgetNames');
+        if (widgetNames && widgetNames.indexOf(name) != -1) {
+          var instance = $(el)[name]('instance');
+          result.push(instance);
+        }
+      });
+      return result;
+    }
+  }, {
+    key: "findWidget",
+    value: function findWidget(name, el) {
+      var widgets = this.findWidgets(name, el);
+      if (widgets && widgets.length) {
+        return widgets[0];
+      } else {
+        return null;
+      }
+    }
+  }, {
+    key: "getAllWidgets",
+    value: function getAllWidgets(el) {
+      var result = [];
+      var widgets = $('[data-widget]', el || document.body);
+      if (el) widgets = widgets.add(el);
+      // debugger;
+      widgets.each(function (k, el) {
+        var widgetNames = $.data(el, 'widgetNames');
+        for (var _k in widgetNames) {
+          var instance = $(el)[widgetNames[_k]]('instance');
+          if (instance) {
+            result.push(instance);
+          }
+        }
+      });
+      return result;
+    }
+  }, {
+    key: "triggerAllWidgets",
+    value: function triggerAllWidgets(methodName, target) {
 
-			var widgets = this.getAllWidgets(target);
+      var args = Array.prototype.slice.call(arguments, 2);
 
-			for (var k in widgets) {
-				var widget = widgets[k];
-				if (widget && methodName in widget) {
-					widget[methodName].apply(widget, args);
-				}
-			}
-		}
-	}, {
-		key: "getWidgetDefs",
-		value: function getWidgetDefs(el) {
+      var widgets = this.getAllWidgets(target);
 
-			el = $(el);
+      for (var k in widgets) {
+        var widget = widgets[k];
+        if (widget && methodName in widget) {
+          widget[methodName].apply(widget, args);
+        }
+      }
+    }
+  }, {
+    key: "getWidgetDefs",
+    value: function getWidgetDefs(el) {
 
-			var widgets = (el.attr('data-widget') || el.attr('data-widgets')).split(/\,\s*/g);
-			var isInitialized = el.data('hasBeenInitialized');
+      el = $(el);
 
-			for (var k in widgets) {
+      var widgets = (el.attr('data-widget') || el.attr('data-widgets')).split(/\,\s*/g);
+      var isInitialized = el.data('hasBeenInitialized');
 
-				var widgetInfo = widgets[k].split('#');
+      for (var k in widgets) {
 
-				widgets[k] = {
-					name: widgetInfo[0],
-					identifier: widgetInfo[1],
-					instance: isInitialized ? el[widgetInfo[0]]('instance') : null
-				};
-			}
+        var widgetInfo = widgets[k].split('#');
 
-			return widgets;
-		}
-	}, {
-		key: "initWidgets",
-		value: function initWidgets(targetEl) {
-			var _this3 = this;
+        widgets[k] = {
+          name: widgetInfo[0],
+          identifier: widgetInfo[1],
+          instance: isInitialized ? el[widgetInfo[0]]('instance') : null
+        };
+      }
 
-			targetEl = $(targetEl || document.body);
+      return widgets;
+    }
+  }, {
+    key: "initWidgets",
+    value: function initWidgets(targetEl) {
+      var _this3 = this;
 
-			// Look for uninitialized widgets
-			targetEl.find("[data-widget]").each(function (k, thisEl) {
+      targetEl = $(targetEl || document.body);
 
-				// Grab the element and data
-				var el = $(thisEl);
-				var data = el.data();
+      // Look for uninitialized widgets
+      targetEl.find("[data-widget]").each(function (k, thisEl) {
 
-				// Only initialize once
-				if (data.hasBeenInitialized) return;
+        // Grab the element and data
+        var el = $(thisEl);
+        var data = el.data();
 
-				// Prepare options
-				var options = {};
-				for (var _k2 in data) {
-					if (_k2[0] !== "_") {
-						options[_k2] = data[_k2];
-					}
-				}
+        // Only initialize once
+        if (data.hasBeenInitialized) return;
 
-				var widgets = _this3.getWidgetDefs(el);
-				var widgetNames = [];
-				for (var i = 0; i < widgets.length; i++) {
+        // Prepare options
+        var options = {};
+        for (var _k2 in data) {
+          if (_k2[0] !== "_") {
+            options[_k2] = data[_k2];
+          }
+        }
 
-					var widget = widgets[i];
+        var widgets = _this3.getWidgetDefs(el);
+        var widgetNames = [];
+        for (var i = 0; i < widgets.length; i++) {
 
-					widgetNames.push(widget.name);
+          var widget = widgets[i];
 
-					// Throw an error if that widget doesn't exist
-					if (widget.name in $.fn === false) {
-						if (data.widgetOptional === true) {
-							return;
-						} else {
-							console.error("Could not initialize widget '" + widget.name + "', as no widget with this name has been declared.");
-							return;
-						}
-					}
+          widgetNames.push(widget.name);
 
-					// Spawn the widget, and grab it's instance
-					el[widget.name](options);
-					var instance = el[widget.name]('instance');
+          // Throw an error if that widget doesn't exist
+          if (widget.name in $.fn === false) {
+            if (data.widgetOptional === true) {
+              return;
+            } else {
+              console.error("Could not initialize widget '" + widget.name + "', as no widget with this name has been declared.");
+              return;
+            }
+          }
 
-					// Save it to the components object
-					if (widget.identifier) {
-						_this3.components[widget.identifier] = instance;
-					}
-				}
+          // Spawn the widget, and grab it's instance
+          el[widget.name](options);
+          var instance = el[widget.name]('instance');
 
-				// Mark as initialized
-				el.data('hasBeenInitialized', true);
-				$.data(thisEl, 'widgetNames', widgetNames);
-			});
+          // Save it to the components object
+          if (widget.identifier) {
+            _this3.components[widget.identifier] = instance;
+          }
+        }
 
-			$(document).trigger('afterWidgetsInit');
-		}
-	}, {
-		key: "widget",
-		value: function widget(name, def) {
-			if (name.indexOf('.') === -1) {
-				name = 'ui.' + name;
-			}
-			$.widget(name, $.extend({}, baseWidget, def));
-		}
-	}]);
+        // Mark as initialized
+        el.data('hasBeenInitialized', true);
+        $.data(thisEl, 'widgetNames', widgetNames);
+      });
 
-	return Site;
+      $(document).trigger('afterWidgetsInit');
+    }
+  }, {
+    key: "widget",
+    value: function widget(name, def) {
+      if (name.indexOf('.') === -1) {
+        name = 'ui.' + name;
+      }
+      $.widget(name, $.extend({}, baseWidget, def));
+    }
+  }]);
+
+  return Site;
 }();
 
 module.exports = new Site();
 
-},{"jquery":4,"jquery-ui/ui/keycode":1,"jquery-ui/ui/version":2,"jquery-ui/ui/widget":3}]},{},[5]);
+},{"jquery":4,"jquery-ui/ui/keycode":1,"jquery-ui/ui/version":2,"jquery-ui/ui/widget":3}]},{},[5])(5)
+});

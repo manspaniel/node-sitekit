@@ -1,0 +1,21 @@
+{
+  "name": "sitekit",
+  "version": "1.0.0",
+  "description": "A lil sugar for connecting jQuery widgets to your markup",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node build/build.js",
+    "build-watch": "node build/build.js --watch"
+  },
+  "repository": "manspaniel/node-sitekit",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jquery": "^3.1.0",
+    "jquery-ui": "^1.12.0"
+  },
+  "devDependencies": {
+    "gulp-watch": "^4.3.9"
+  }
+}

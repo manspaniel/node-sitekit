@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node build/build.js",
-    "build-watch": "node build/build.js --watch"
+    "build": "node util/build.js",
+    "build-watch": "node util/build.js --watch"
   },
   "repository": "manspaniel/node-sitekit",
   "author": "",

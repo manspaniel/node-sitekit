@@ -10,61 +10,9 @@ const jQuery = (() => {
   return jQuery;
 })();
 const $ = jQuery;
+const EventEmitter = require('events').EventEmitter;
 
-const XHRErrorCodes = {
-  "timeout": "Timed out while making API request",
-  "abort": "XHR request was aborted",
-  "error": "XHR request encountered an error",
-  "parsererror": "Unable to parse API request"
-};
-
-const baseWidget = {
-  debounce(callback, time, name) {
-    
-    var self = this;
-    
-    name = name || '_';
-    
-    self._scheduledTimers = self._scheduledTimers || {};
-    
-    clearTimeout(this._scheduledTimers[name]);
-    
-    this._scheduledTimers[name] = setTimeout(() => {
-      callback.call(this);
-    }, time);
-    
-  },
-  throttle(callback, time, name, val) {
-    
-    var self = this;
-    name = name || '_';
-    
-    self._throttled = self._throttled || {};
-    self._scheduledTimers = self._scheduledTimers || {};
-    
-    if(self._throttled[name] === undefined) {
-      clearTimeout(this._scheduledTimers[name]);
-      this._scheduledTimers[name] = setTimeout(() => {
-        this._scheduledTimers[name] = null;
-        self._throttled[name] = undefined;
-      }, time);
-      self._throttled[name] = val;
-      callback();
-    }
-    
-  },
-  afterInit(callback) {
-    $(document).bind('afterWidgetsInit.'+this.uuid, () => {
-      callback.call(this);
-      $(document).unbind('afterWidgetsInit.'+this.uuid);
-    });
-  },
-  instance() {
-    return this;
-  }
-};
-
-class Site {
+class Site extends EventEmitter {
   
   constructor() {
     
@@ -306,7 +254,7 @@ class Site {
       
     });
     
-    $(document).trigger('afterWidgetsInit');
+    this.emit('afterWidgetsInit');
     
   }
   
@@ -533,14 +481,14 @@ class Site {
 			htmlBody.stop(true);
 		});
 		
-		$(document).trigger("xhrLoadStart");
+		this.emit("xhrLoadStart");
 		
 		this.getContent(originalURL, (response, textStatus) => {
 			if(requestID !== this.XHRRequestCounter) {
 				// Looks like another request was made after this one, so ignore the response.
 				return;
 			}
-			$(document).trigger("xhrTransitioningOut");
+			this.emit("xhrTransitioningOut");
 			
 			// Alter the response to keep the body tag
 			response = response.replace(/(<\/?)body/g, '$1bodyfake');
@@ -562,10 +510,10 @@ class Site {
 			// Grab content
 			var newContent = $("<div class='xhr-page-contents'></div>").append(foundPageContainer.children());
 			
-			$(document).trigger("xhrLoadMiddle");
+			this.emit("xhrLoadMiddle");
 			
 			var finalize = () => {
-				$(document).trigger("xhrLoadEnd");
+				this.emit("xhrLoadEnd");
 				
 				// Grab the page title
 				var title = result.find("title").html();
@@ -687,7 +635,7 @@ class Site {
 					if(stepIndex < steps.length) {
 						steps[stepIndex++](next);
 					} else {
-						$(document).trigger("xhrPageChanged");
+						this.emit("xhrPageChanged");
 					}
 				};
 				
@@ -781,10 +729,10 @@ class Site {
 		// Add event listeners to jQuery which will add/remove the 'xhr-loading' class
 		$(document).ajaxStart(() => {
 			$(document.body).addClass("xhr-loading");
-			$(document).trigger("xhrLoadingStart");
+			this.emit("xhrLoadingStart");
 		}).ajaxStop(() => {
 			$(document.body).removeClass("xhr-loading");
-			$(document).trigger("xhrLoadingStop");
+			this.emit("xhrLoadingStop");
 		});
 		
 		// Add event listeners to links where appropriate
@@ -839,7 +787,7 @@ class Site {
 			linkEl.click((e) => {
 				if(!e.metaKey && !e.ctrlKey) {
 					e.preventDefault();
-					$(document).trigger('xhrLinkClick', [linkEl]);
+					this.emit('xhrLinkClick', $(linkEl));
 					this.goToURL(el.href);
 				}
 			});
@@ -884,5 +832,58 @@ class Site {
   
   
 }
+
+const XHRErrorCodes = {
+  "timeout": "Timed out while making API request",
+  "abort": "XHR request was aborted",
+  "error": "XHR request encountered an error",
+  "parsererror": "Unable to parse API request"
+};
+
+const baseWidget = {
+  debounce(callback, time, name) {
+    
+    var self = this;
+    
+    name = name || '_';
+    
+    self._scheduledTimers = self._scheduledTimers || {};
+    
+    clearTimeout(this._scheduledTimers[name]);
+    
+    this._scheduledTimers[name] = setTimeout(() => {
+      callback.call(this);
+    }, time);
+    
+  },
+  throttle(callback, time, name, val) {
+    
+    var self = this;
+    name = name || '_';
+    
+    self._throttled = self._throttled || {};
+    self._scheduledTimers = self._scheduledTimers || {};
+    
+    if(self._throttled[name] === undefined) {
+      clearTimeout(this._scheduledTimers[name]);
+      this._scheduledTimers[name] = setTimeout(() => {
+        this._scheduledTimers[name] = null;
+        self._throttled[name] = undefined;
+      }, time);
+      self._throttled[name] = val;
+      callback();
+    }
+    
+  },
+  afterInit(callback) {
+    $(document).bind('afterWidgetsInit.'+this.uuid, () => {
+      callback.call(this);
+      $(document).unbind('afterWidgetsInit.'+this.uuid);
+    });
+  },
+  instance() {
+    return this;
+  }
+};
 
 module.exports = Site;

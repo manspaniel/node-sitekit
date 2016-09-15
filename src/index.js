@@ -342,7 +342,7 @@ class Site extends EventEmitter {
 			var self = $(el);
 			
 			// Get images from 'style' attribute of div elements only
-			self.find("div[style]").each(() => {
+			self.find("div[style], div.preload").each(() => {
 				if(el.style.backgroundImage && typeof el.style.backgroundImage == 'string') {
 					var match = el.style.backgroundImage.match(/url\((.+)\)/);
 					if(match) {
@@ -689,24 +689,19 @@ class Site extends EventEmitter {
 		
 		var foundTransition = false;
 		var finalDelay = 0;
-		
-		targetEl.find("[data-widget]").each((index, el) => {
-			
-			el = $(el);
-			var widgets = this.getWidgetDefs(el);
-			
-			for(var k in widgets) {
-				var widget = widgets[k].instance;
-				if(widget && widget._transitionOut) {
-					foundTransition = true;
-					var delay = widget._transitionOut(newState, oldState, this.xhrOptions.widgetTransitionDelay);
-					finalDelay = Math.max(delay, finalDelay);
-					if(destroy) {
-						widget.destroy();
-					}
-				}
-			}
-		});
+    
+    let widgets = this.getAllWidgets(targetEl);
+    
+    for(let widget of widgets) {
+      foundTransition = true;
+      if(widget._transitionOut) {
+        var delay = widget._transitionOut(newState, oldState, this.xhrOptions.widgetTransitionDelay);
+        finalDelay = Math.max(delay, finalDelay);
+        if(destroy) {
+          widget.destroy();
+        }
+      }
+    }
 		
 		if(foundTransition && finalDelay) {
 			setTimeout(callback, finalDelay);

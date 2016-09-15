@@ -11367,8 +11367,6 @@ var Site = function () {
 			}
 			this.preloadedPages[url] = true;
 
-			console.log("FAAA???");
-
 			if (this.xhrOptions.cachePages && this.pageCache[url]) {
 				callback(this.pageCache[url]);
 			} else {
@@ -11398,8 +11396,6 @@ var Site = function () {
 
 			this.lastURL = url;
 
-			console.log("A??");
-
 			// See if any widgets want to intercept this request instead
 			var allWidgets = this.getAllWidgets();
 			var urlPath = url.match(/:\/\/[^\/]+(.*)/);
@@ -11414,25 +11410,18 @@ var Site = function () {
 				}
 			}
 
-			console.log("B??");
-
 			var htmlBody = $("html,body").stop(true).animate({ scrollTop: 0 }, this.xhrOptions.scrollAnimation).one('scroll', function () {
 				htmlBody.stop(true);
 			});
 
-			console.log("C??");
-
 			$(document).trigger("xhrLoadStart");
 
 			this.getContent(originalURL, function (response, textStatus) {
-				console.log("D??");
 				if (requestID !== _this8.XHRRequestCounter) {
 					// Looks like another request was made after this one, so ignore the response.
 					return;
 				}
-				console.log("A");
 				$(document).trigger("xhrTransitioningOut");
-				console.log("A");
 
 				// Alter the response to keep the body tag
 				response = response.replace(/(<\/?)body/g, '$1bodyfake');
@@ -11444,8 +11433,6 @@ var Site = function () {
 				// Pull out the contents
 				var foundPageContainer = result.find("[data-page-container]:first");
 
-				console.log("B");
-
 				if (foundPageContainer.length === 0) {
 					// Could not find a page container element :/ just link to the page
 					window.location.href = originalURL;
@@ -11453,19 +11440,13 @@ var Site = function () {
 					return;
 				}
 
-				console.log("C");
-
 				// Grab content
 				var newContent = $("<div class='xhr-page-contents'></div>").append(foundPageContainer.children());
 
 				$(document).trigger("xhrLoadMiddle");
 
-				console.log("D");
-
 				var finalize = function finalize() {
 					$(document).trigger("xhrLoadEnd");
-
-					console.log("E");
 
 					// Grab the page title
 					var title = result.find("title").html();
@@ -11486,8 +11467,6 @@ var Site = function () {
 
 					var existingScripts = $(document.head).find("script");
 					var existingStylesheets = $(document.head).find("link[rel=stylesheet]");
-
-					console.log("F");
 
 					// Swap menus out
 					result.find("ul.menu").each(function (k, item) {
@@ -11557,10 +11536,8 @@ var Site = function () {
 
 					// Destroy existing widgets
 					var steps = [function (next) {
-						console.log("G");
 						_this8.transitionWidgetsOut(_this8.XHRPageContainer, oldPageState, _this8.pageState, true, next);
 					}, function (next) {
-						console.log("H");
 						// Set up links and widgets
 						newContent.show();
 						_this8.forceResizeWindow();
@@ -11573,7 +11550,6 @@ var Site = function () {
 						delay = _this8.xhrOptions.swapContent(_this8.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward") || delay;
 						setTimeout(next, delay);
 					}, function (next) {
-						console.log("I");
 						_this8.transitionWidgetsIn(newContent, _this8.pageState, oldPageState, next);
 					}];
 
@@ -11590,10 +11566,8 @@ var Site = function () {
 				};
 
 				if (_this8.xhrOptions.loadImages) {
-					console.log("M");
 					_this8.preloadContent(newContent, _this8.xhrOptions.imageLoadTimeout, finalize);
 				} else {
-					console.log("N");
 					finalize();
 				}
 			});
@@ -11671,7 +11645,6 @@ var Site = function () {
 
 			// Grab the page container, if one exists
 			this.XHRPageContainer = $("[data-page-container]:first");
-			console.log($, this.XHRPageContainer);
 			if (this.XHRPageContainer.length === 0) {
 				this.XHRPageContainer = null;
 				return;

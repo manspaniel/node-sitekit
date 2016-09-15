@@ -16,6 +16,8 @@ class Site extends EventEmitter {
   
   constructor() {
     
+    super();
+    
     this.$ = jQuery;
     this.preloadedImages = [];
     

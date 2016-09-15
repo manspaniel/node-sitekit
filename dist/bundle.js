@@ -1,4 +1,308 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.sitekit = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
+
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
+      }
+    }
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+
+},{}],2:[function(require,module,exports){
 /*!
  * jQuery UI Keycode 1.12.0
  * http://jqueryui.com
@@ -45,7 +349,7 @@ return $.ui.keyCode = {
 
 } ) );
 
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 ( function( factory ) {
 	if ( typeof define === "function" && define.amd ) {
 
@@ -64,7 +368,7 @@ return $.ui.version = "1.12.0";
 
 } ) );
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 /*!
  * jQuery UI Widget 1.12.0
  * http://jqueryui.com
@@ -779,7 +1083,7 @@ return $.widget;
 
 } ) );
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /*eslint-disable no-unused-vars*/
 /*!
  * jQuery JavaScript Library v3.1.0
@@ -10855,12 +11159,16 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var jQuery = function () {
 	var oldjQuery = window.jQuery;
@@ -10874,80 +11182,28 @@ var jQuery = function () {
 	return jQuery;
 }();
 var $ = jQuery;
+var EventEmitter = require('events').EventEmitter;
 
-var XHRErrorCodes = {
-	"timeout": "Timed out while making API request",
-	"abort": "XHR request was aborted",
-	"error": "XHR request encountered an error",
-	"parsererror": "Unable to parse API request"
-};
+var Site = function (_EventEmitter) {
+	_inherits(Site, _EventEmitter);
 
-var baseWidget = {
-	debounce: function debounce(callback, time, name) {
-		var _this = this;
-
-		var self = this;
-
-		name = name || '_';
-
-		self._scheduledTimers = self._scheduledTimers || {};
-
-		clearTimeout(this._scheduledTimers[name]);
-
-		this._scheduledTimers[name] = setTimeout(function () {
-			callback.call(_this);
-		}, time);
-	},
-	throttle: function throttle(callback, time, name, val) {
-		var _this2 = this;
-
-		var self = this;
-		name = name || '_';
-
-		self._throttled = self._throttled || {};
-		self._scheduledTimers = self._scheduledTimers || {};
-
-		if (self._throttled[name] === undefined) {
-			clearTimeout(this._scheduledTimers[name]);
-			this._scheduledTimers[name] = setTimeout(function () {
-				_this2._scheduledTimers[name] = null;
-				self._throttled[name] = undefined;
-			}, time);
-			self._throttled[name] = val;
-			callback();
-		}
-	},
-	afterInit: function afterInit(callback) {
-		var _this3 = this;
-
-		$(document).bind('afterWidgetsInit.' + this.uuid, function () {
-			callback.call(_this3);
-			$(document).unbind('afterWidgetsInit.' + _this3.uuid);
-		});
-	},
-	instance: function instance() {
-		return this;
-	}
-};
-
-var Site = function () {
 	function Site() {
-		var _this4 = this;
-
 		_classCallCheck(this, Site);
 
-		this.$ = jQuery;
-		this.preloadedImages = [];
+		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Site).call(this));
 
-		this.pageCache = {};
-		this.preloadedPages = {};
+		_this.$ = jQuery;
+		_this.preloadedImages = [];
 
-		this.pagePreloadQueue = [];
-		this.isPreloadingPages = false;
+		_this.pageCache = {};
+		_this.preloadedPages = {};
 
-		this.XHRRequestCounter = 0;
+		_this.pagePreloadQueue = [];
+		_this.isPreloadingPages = false;
 
-		this.xhrOptions = {
+		_this.XHRRequestCounter = 0;
+
+		_this.xhrOptions = {
 			scrollAnimation: {
 				duration: 400
 			},
@@ -10958,7 +11214,7 @@ var Site = function () {
 			cachePages: false,
 			swapContent: function swapContent(container, originalContent, newContent, direction) {
 
-				var duration = _this4.xhrOptions.widgetTransitionDelay || 500;
+				var duration = _this.xhrOptions.widgetTransitionDelay || 500;
 
 				// Fade out old content
 				originalContent.fadeOut({
@@ -10986,14 +11242,15 @@ var Site = function () {
 		};
 
 		// Init dev mode
-		this.initLiveReload();
+		_this.initLiveReload();
 
-		this.components = {};
+		_this.components = {};
 
 		// Wait for DOM load
 		jQuery(function () {
-			return _this4.domReady();
+			return _this.domReady();
 		});
+		return _this;
 	}
 
 	_createClass(Site, [{
@@ -11125,7 +11382,7 @@ var Site = function () {
 	}, {
 		key: "initWidgets",
 		value: function initWidgets(targetEl) {
-			var _this5 = this;
+			var _this2 = this;
 
 			targetEl = $(targetEl || document.body);
 
@@ -11147,7 +11404,7 @@ var Site = function () {
 					}
 				}
 
-				var widgets = _this5.getWidgetDefs(el);
+				var widgets = _this2.getWidgetDefs(el);
 				var widgetNames = [];
 				for (var i = 0; i < widgets.length; i++) {
 
@@ -11171,7 +11428,7 @@ var Site = function () {
 
 					// Save it to the components object
 					if (widget.identifier) {
-						_this5.components[widget.identifier] = instance;
+						_this2.components[widget.identifier] = instance;
 					}
 				}
 
@@ -11180,7 +11437,7 @@ var Site = function () {
 				$.data(thisEl, 'widgetNames', widgetNames);
 			});
 
-			$(document).trigger('afterWidgetsInit');
+			this.emit('afterWidgetsInit');
 		}
 	}, {
 		key: "widget",
@@ -11323,7 +11580,7 @@ var Site = function () {
 	}, {
 		key: "preloadPages",
 		value: function preloadPages() {
-			var _this6 = this;
+			var _this3 = this;
 
 			if (this.isPreloadingPages) return;
 			this.isPreloadingPages = true;
@@ -11331,15 +11588,15 @@ var Site = function () {
 			var loadNext = function loadNext() {
 
 				// Filter out pre-preloaded urls
-				_this6.pagePreloadQueue = _this6.pagePreloadQueue.filter(function (url) {
-					return _this6.preloadedPages[url] ? false : true;
+				_this3.pagePreloadQueue = _this3.pagePreloadQueue.filter(function (url) {
+					return _this3.preloadedPages[url] ? false : true;
 				});
 
-				if (_this6.pagePreloadQueue.length === 0) {
-					_this6.isPreloadingPages = false;
+				if (_this3.pagePreloadQueue.length === 0) {
+					_this3.isPreloadingPages = false;
 				} else {
-					var url = _this6.pagePreloadQueue.shift();
-					_this6.getContent(url, function () {
+					var url = _this3.pagePreloadQueue.shift();
+					_this3.getContent(url, function () {
 						setTimeout(loadNext);
 					}, true);
 				}
@@ -11350,7 +11607,7 @@ var Site = function () {
 	}, {
 		key: "getContent",
 		value: function getContent(url, callback, isPreload) {
-			var _this7 = this;
+			var _this4 = this;
 
 			url = url.replace(/\#.+/, '');
 
@@ -11376,8 +11633,8 @@ var Site = function () {
 					global: !isPreload,
 					success: function success(response, textStatus) {
 						callback(response, textStatus, null);
-						if (response && _this7.xhrOptions.cachePages) {
-							_this7.pageCache[url] = response;
+						if (response && _this4.xhrOptions.cachePages) {
+							_this4.pageCache[url] = response;
 						}
 					},
 					error: function error(jqXHR, textStatus, _error) {
@@ -11389,7 +11646,7 @@ var Site = function () {
 	}, {
 		key: "goToURL",
 		value: function goToURL(url, dontPush) {
-			var _this8 = this;
+			var _this5 = this;
 
 			var originalURL = url;
 			var requestID = ++this.XHRRequestCounter;
@@ -11414,14 +11671,14 @@ var Site = function () {
 				htmlBody.stop(true);
 			});
 
-			$(document).trigger("xhrLoadStart");
+			this.emit("xhrLoadStart");
 
 			this.getContent(originalURL, function (response, textStatus) {
-				if (requestID !== _this8.XHRRequestCounter) {
+				if (requestID !== _this5.XHRRequestCounter) {
 					// Looks like another request was made after this one, so ignore the response.
 					return;
 				}
-				$(document).trigger("xhrTransitioningOut");
+				_this5.emit("xhrTransitioningOut");
 
 				// Alter the response to keep the body tag
 				response = response.replace(/(<\/?)body/g, '$1bodyfake');
@@ -11443,10 +11700,10 @@ var Site = function () {
 				// Grab content
 				var newContent = $("<div class='xhr-page-contents'></div>").append(foundPageContainer.children());
 
-				$(document).trigger("xhrLoadMiddle");
+				_this5.emit("xhrLoadMiddle");
 
 				var finalize = function finalize() {
-					$(document).trigger("xhrLoadEnd");
+					_this5.emit("xhrLoadEnd");
 
 					// Grab the page title
 					var title = result.find("title").html();
@@ -11456,10 +11713,10 @@ var Site = function () {
 
 					// Grab the body class
 					var bodyClass = result.find("bodyfake").attr('class');
-					bodyClass = _this8.xhrOptions.filterBodyClasses(document.body.className, bodyClass);
+					bodyClass = _this5.xhrOptions.filterBodyClasses(document.body.className, bodyClass);
 
-					var oldPageState = _this8.pageState;
-					_this8.pageState = result.find("pagestate").data('state');
+					var oldPageState = _this5.pageState;
+					_this5.pageState = result.find("pagestate").data('state');
 
 					// Set page title
 					$("head title").html(title);
@@ -11473,7 +11730,7 @@ var Site = function () {
 
 						var id = item.getAttribute('id');
 						var el = $('#' + id).html(item.innerHTML);
-						_this8.handleXHRLinks(el);
+						_this5.handleXHRLinks(el);
 					});
 
 					// Swap WP 'Edit Post' link
@@ -11519,12 +11776,12 @@ var Site = function () {
 					});
 
 					// Grab old content, by wrapping it in a span
-					_this8.XHRPageContainer.wrapInner("<div class='xhr-page-contents'></div>");
-					var oldContent = _this8.XHRPageContainer.children().first();
+					_this5.XHRPageContainer.wrapInner("<div class='xhr-page-contents'></div>");
+					var oldContent = _this5.XHRPageContainer.children().first();
 
 					// Add new content to the page
 					try {
-						_this8.XHRPageContainer.append(newContent);
+						_this5.XHRPageContainer.append(newContent);
 					} catch (e) {}
 
 					newContent.hide();
@@ -11536,21 +11793,21 @@ var Site = function () {
 
 					// Destroy existing widgets
 					var steps = [function (next) {
-						_this8.transitionWidgetsOut(_this8.XHRPageContainer, oldPageState, _this8.pageState, true, next);
+						_this5.transitionWidgetsOut(_this5.XHRPageContainer, oldPageState, _this5.pageState, true, next);
 					}, function (next) {
 						// Set up links and widgets
 						newContent.show();
-						_this8.forceResizeWindow();
-						_this8.initWidgets(newContent);
-						_this8.handleXHRLinks(newContent);
+						_this5.forceResizeWindow();
+						_this5.initWidgets(newContent);
+						_this5.handleXHRLinks(newContent);
 						newContent.hide();
 
 						// Perform the swap!
-						var delay = _this8.xhrOptions.widgetTransitionDelay;
-						delay = _this8.xhrOptions.swapContent(_this8.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward") || delay;
+						var delay = _this5.xhrOptions.widgetTransitionDelay;
+						delay = _this5.xhrOptions.swapContent(_this5.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward") || delay;
 						setTimeout(next, delay);
 					}, function (next) {
-						_this8.transitionWidgetsIn(newContent, _this8.pageState, oldPageState, next);
+						_this5.transitionWidgetsIn(newContent, _this5.pageState, oldPageState, next);
 					}];
 
 					var stepIndex = 0;
@@ -11558,15 +11815,15 @@ var Site = function () {
 						if (stepIndex < steps.length) {
 							steps[stepIndex++](next);
 						} else {
-							$(document).trigger("xhrPageChanged");
+							_this5.emit("xhrPageChanged");
 						}
 					};
 
 					next();
 				};
 
-				if (_this8.xhrOptions.loadImages) {
-					_this8.preloadContent(newContent, _this8.xhrOptions.imageLoadTimeout, finalize);
+				if (_this5.xhrOptions.loadImages) {
+					_this5.preloadContent(newContent, _this5.xhrOptions.imageLoadTimeout, finalize);
 				} else {
 					finalize();
 				}
@@ -11575,7 +11832,7 @@ var Site = function () {
 	}, {
 		key: "transitionWidgetsIn",
 		value: function transitionWidgetsIn(targetEl, newState, oldState, callback) {
-			var _this9 = this;
+			var _this6 = this;
 
 			var foundTransition = false;
 			var finalDelay = 0;
@@ -11583,11 +11840,11 @@ var Site = function () {
 			targetEl.find("[data-widget]").each(function (index, el) {
 
 				el = $(el);
-				var widgets = _this9.getWidgetDefs(el);
+				var widgets = _this6.getWidgetDefs(el);
 
 				for (var k in widgets) {
 					if (widgets[k].instance && widgets[k].instance._transitionIn) {
-						var delay = widgets[k].instance._transitionIn(newState, oldState, _this9.xhrOptions.widgetTransitionDelay);
+						var delay = widgets[k].instance._transitionIn(newState, oldState, _this6.xhrOptions.widgetTransitionDelay);
 						foundTransition = true;
 						finalDelay = Math.max(delay, finalDelay);
 					}
@@ -11605,7 +11862,7 @@ var Site = function () {
 	}, {
 		key: "transitionWidgetsOut",
 		value: function transitionWidgetsOut(targetEl, newState, oldState, destroy, callback) {
-			var _this10 = this;
+			var _this7 = this;
 
 			var foundTransition = false;
 			var finalDelay = 0;
@@ -11613,13 +11870,13 @@ var Site = function () {
 			targetEl.find("[data-widget]").each(function (index, el) {
 
 				el = $(el);
-				var widgets = _this10.getWidgetDefs(el);
+				var widgets = _this7.getWidgetDefs(el);
 
 				for (var k in widgets) {
 					var widget = widgets[k].instance;
 					if (widget && widget._transitionOut) {
 						foundTransition = true;
-						var delay = widget._transitionOut(newState, oldState, _this10.xhrOptions.widgetTransitionDelay);
+						var delay = widget._transitionOut(newState, oldState, _this7.xhrOptions.widgetTransitionDelay);
 						finalDelay = Math.max(delay, finalDelay);
 						if (destroy) {
 							widget.destroy();
@@ -11639,7 +11896,7 @@ var Site = function () {
 	}, {
 		key: "initXHRPageSystem",
 		value: function initXHRPageSystem() {
-			var _this11 = this;
+			var _this8 = this;
 
 			if (!this.xhrOptions.xhrEnabled) return;
 
@@ -11653,10 +11910,10 @@ var Site = function () {
 			// Add event listeners to jQuery which will add/remove the 'xhr-loading' class
 			$(document).ajaxStart(function () {
 				$(document.body).addClass("xhr-loading");
-				$(document).trigger("xhrLoadingStart");
+				_this8.emit("xhrLoadingStart");
 			}).ajaxStop(function () {
 				$(document.body).removeClass("xhr-loading");
-				$(document).trigger("xhrLoadingStop");
+				_this8.emit("xhrLoadingStop");
 			});
 
 			// Add event listeners to links where appropriate
@@ -11667,7 +11924,7 @@ var Site = function () {
 				var popped = 'state' in window.history && window.history.state !== null;
 				if (popped) {
 					if (e.state) {
-						_this11.goToURL(window.location.href, true);
+						_this8.goToURL(window.location.href, true);
 					} else {
 						window.location.reload();
 					}
@@ -11677,7 +11934,7 @@ var Site = function () {
 	}, {
 		key: "handleXHRLinks",
 		value: function handleXHRLinks(targetEl) {
-			var _this12 = this;
+			var _this9 = this;
 
 			targetEl = $(targetEl || document.body);
 
@@ -11706,14 +11963,14 @@ var Site = function () {
 					return;
 				}
 
-				_this12.pagePreloadQueue.push(el.href);
-				_this12.preloadPages();
+				_this9.pagePreloadQueue.push(el.href);
+				_this9.preloadPages();
 
 				linkEl.click(function (e) {
 					if (!e.metaKey && !e.ctrlKey) {
 						e.preventDefault();
-						$(document).trigger('xhrLinkClick', [linkEl]);
-						_this12.goToURL(el.href);
+						_this9.emit('xhrLinkClick', $(linkEl));
+						_this9.goToURL(el.href);
 					}
 				});
 			});
@@ -11756,9 +12013,64 @@ var Site = function () {
 	}]);
 
 	return Site;
-}();
+}(EventEmitter);
+
+var XHRErrorCodes = {
+	"timeout": "Timed out while making API request",
+	"abort": "XHR request was aborted",
+	"error": "XHR request encountered an error",
+	"parsererror": "Unable to parse API request"
+};
+
+var baseWidget = {
+	debounce: function debounce(callback, time, name) {
+		var _this10 = this;
+
+		var self = this;
+
+		name = name || '_';
+
+		self._scheduledTimers = self._scheduledTimers || {};
+
+		clearTimeout(this._scheduledTimers[name]);
+
+		this._scheduledTimers[name] = setTimeout(function () {
+			callback.call(_this10);
+		}, time);
+	},
+	throttle: function throttle(callback, time, name, val) {
+		var _this11 = this;
+
+		var self = this;
+		name = name || '_';
+
+		self._throttled = self._throttled || {};
+		self._scheduledTimers = self._scheduledTimers || {};
+
+		if (self._throttled[name] === undefined) {
+			clearTimeout(this._scheduledTimers[name]);
+			this._scheduledTimers[name] = setTimeout(function () {
+				_this11._scheduledTimers[name] = null;
+				self._throttled[name] = undefined;
+			}, time);
+			self._throttled[name] = val;
+			callback();
+		}
+	},
+	afterInit: function afterInit(callback) {
+		var _this12 = this;
+
+		$(document).bind('afterWidgetsInit.' + this.uuid, function () {
+			callback.call(_this12);
+			$(document).unbind('afterWidgetsInit.' + _this12.uuid);
+		});
+	},
+	instance: function instance() {
+		return this;
+	}
+};
 
 module.exports = Site;
 
-},{"jquery":4,"jquery-ui/ui/keycode":1,"jquery-ui/ui/version":2,"jquery-ui/ui/widget":3}]},{},[5])(5)
+},{"events":1,"jquery":5,"jquery-ui/ui/keycode":2,"jquery-ui/ui/version":3,"jquery-ui/ui/widget":4}]},{},[6])(6)
 });

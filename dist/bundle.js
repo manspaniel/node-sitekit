@@ -11264,6 +11264,8 @@ var Site = function (_EventEmitter) {
 		key: "initLiveReload",
 		value: function initLiveReload() {
 
+			return;
+
 			if (navigator.appName != "Netscape" || !window.location.href.match(/(2016|ngrok)/)) {
 				return false;
 			}
@@ -11450,6 +11452,7 @@ var Site = function (_EventEmitter) {
 	}, {
 		key: "preloadImages",
 		value: function preloadImages(srcs, timeout, callback) {
+			var _this3 = this;
 
 			var images = [];
 
@@ -11468,7 +11471,7 @@ var Site = function (_EventEmitter) {
 
 			var loaded = function loaded(img) {
 				images.push(img);
-				preloadedImages.push(img);
+				_this3.preloadedImages.push(img);
 				if (images.length == srcs.length) {
 					triggerCallback();
 				}
@@ -11480,8 +11483,7 @@ var Site = function (_EventEmitter) {
 				}, timeout);
 			}
 
-			$(srcs).each(function (k, src) {
-
+			var preloadItem = function preloadItem(src) {
 				var img = $("<img>");
 
 				var hasLoaded = false;
@@ -11500,7 +11502,9 @@ var Site = function (_EventEmitter) {
 						loaded(img);
 					}
 				}
-			});
+			};
+
+			srcs.map(preloadItem);
 		}
 
 		/*
@@ -11525,9 +11529,10 @@ var Site = function (_EventEmitter) {
 				var self = $(el);
 
 				// Get images from 'style' attribute of div elements only
-				self.find("div[style]").each(function () {
-					if (el.style.backgroundImage && typeof el.style.backgroundImage == 'string') {
-						var match = el.style.backgroundImage.match(/url\((.+)\)/);
+				self.find("[style], .preload").each(function (k, el) {
+					var backgroundImage = $(el).css('backgroundImage');
+					if (backgroundImage) {
+						var match = backgroundImage.match(/url\((.+)\)/);
 						if (match) {
 							var src = match[1].replace(/(^[\'\"]|[\'\"]$)/g, '');
 							images.push(src);
@@ -11536,7 +11541,7 @@ var Site = function (_EventEmitter) {
 				});
 
 				// Get 'src' attributes from images
-				self.find("img").each(function () {
+				self.find("img").each(function (k, el) {
 					images.push(el.src);
 				});
 			});
@@ -11580,7 +11585,7 @@ var Site = function (_EventEmitter) {
 	}, {
 		key: "preloadPages",
 		value: function preloadPages() {
-			var _this3 = this;
+			var _this4 = this;
 
 			if (this.isPreloadingPages) return;
 			this.isPreloadingPages = true;
@@ -11588,15 +11593,15 @@ var Site = function (_EventEmitter) {
 			var loadNext = function loadNext() {
 
 				// Filter out pre-preloaded urls
-				_this3.pagePreloadQueue = _this3.pagePreloadQueue.filter(function (url) {
-					return _this3.preloadedPages[url] ? false : true;
+				_this4.pagePreloadQueue = _this4.pagePreloadQueue.filter(function (url) {
+					return _this4.preloadedPages[url] ? false : true;
 				});
 
-				if (_this3.pagePreloadQueue.length === 0) {
-					_this3.isPreloadingPages = false;
+				if (_this4.pagePreloadQueue.length === 0) {
+					_this4.isPreloadingPages = false;
 				} else {
-					var url = _this3.pagePreloadQueue.shift();
-					_this3.getContent(url, function () {
+					var url = _this4.pagePreloadQueue.shift();
+					_this4.getContent(url, function () {
 						setTimeout(loadNext);
 					}, true);
 				}
@@ -11607,7 +11612,7 @@ var Site = function (_EventEmitter) {
 	}, {
 		key: "getContent",
 		value: function getContent(url, callback, isPreload) {
-			var _this4 = this;
+			var _this5 = this;
 
 			url = url.replace(/\#.+/, '');
 
@@ -11633,8 +11638,8 @@ var Site = function (_EventEmitter) {
 					global: !isPreload,
 					success: function success(response, textStatus) {
 						callback(response, textStatus, null);
-						if (response && _this4.xhrOptions.cachePages) {
-							_this4.pageCache[url] = response;
+						if (response && _this5.xhrOptions.cachePages) {
+							_this5.pageCache[url] = response;
 						}
 					},
 					error: function error(jqXHR, textStatus, _error) {
@@ -11646,7 +11651,7 @@ var Site = function (_EventEmitter) {
 	}, {
 		key: "goToURL",
 		value: function goToURL(url, dontPush) {
-			var _this5 = this;
+			var _this6 = this;
 
 			var originalURL = url;
 			var requestID = ++this.XHRRequestCounter;
@@ -11674,11 +11679,11 @@ var Site = function (_EventEmitter) {
 			this.emit("xhrLoadStart");
 
 			this.getContent(originalURL, function (response, textStatus) {
-				if (requestID !== _this5.XHRRequestCounter) {
+				if (requestID !== _this6.XHRRequestCounter) {
 					// Looks like another request was made after this one, so ignore the response.
 					return;
 				}
-				_this5.emit("xhrTransitioningOut");
+				_this6.emit("xhrTransitioningOut");
 
 				// Alter the response to keep the body tag
 				response = response.replace(/(<\/?)body/g, '$1bodyfake');
@@ -11700,10 +11705,10 @@ var Site = function (_EventEmitter) {
 				// Grab content
 				var newContent = $("<div class='xhr-page-contents'></div>").append(foundPageContainer.children());
 
-				_this5.emit("xhrLoadMiddle");
+				_this6.emit("xhrLoadMiddle");
 
 				var finalize = function finalize() {
-					_this5.emit("xhrLoadEnd");
+					_this6.emit("xhrLoadEnd");
 
 					// Grab the page title
 					var title = result.find("title").html();
@@ -11713,10 +11718,10 @@ var Site = function (_EventEmitter) {
 
 					// Grab the body class
 					var bodyClass = result.find("bodyfake").attr('class');
-					bodyClass = _this5.xhrOptions.filterBodyClasses(document.body.className, bodyClass);
+					bodyClass = _this6.xhrOptions.filterBodyClasses(document.body.className, bodyClass);
 
-					var oldPageState = _this5.pageState;
-					_this5.pageState = result.find("pagestate").data('state');
+					var oldPageState = _this6.pageState;
+					_this6.pageState = result.find("pagestate").data('state');
 
 					// Set page title
 					$("head title").html(title);
@@ -11730,7 +11735,7 @@ var Site = function (_EventEmitter) {
 
 						var id = item.getAttribute('id');
 						var el = $('#' + id).html(item.innerHTML);
-						_this5.handleXHRLinks(el);
+						_this6.handleXHRLinks(el);
 					});
 
 					// Swap WP 'Edit Post' link
@@ -11776,12 +11781,12 @@ var Site = function (_EventEmitter) {
 					});
 
 					// Grab old content, by wrapping it in a span
-					_this5.XHRPageContainer.wrapInner("<div class='xhr-page-contents'></div>");
-					var oldContent = _this5.XHRPageContainer.children().first();
+					_this6.XHRPageContainer.wrapInner("<div class='xhr-page-contents'></div>");
+					var oldContent = _this6.XHRPageContainer.children().first();
 
 					// Add new content to the page
 					try {
-						_this5.XHRPageContainer.append(newContent);
+						_this6.XHRPageContainer.append(newContent);
 					} catch (e) {}
 
 					newContent.hide();
@@ -11793,21 +11798,21 @@ var Site = function (_EventEmitter) {
 
 					// Destroy existing widgets
 					var steps = [function (next) {
-						_this5.transitionWidgetsOut(_this5.XHRPageContainer, oldPageState, _this5.pageState, true, next);
+						_this6.transitionWidgetsOut(_this6.XHRPageContainer, oldPageState, _this6.pageState, true, next);
 					}, function (next) {
 						// Set up links and widgets
 						newContent.show();
-						_this5.forceResizeWindow();
-						_this5.initWidgets(newContent);
-						_this5.handleXHRLinks(newContent);
+						_this6.forceResizeWindow();
+						_this6.initWidgets(newContent);
+						_this6.handleXHRLinks(newContent);
 						newContent.hide();
 
 						// Perform the swap!
-						var delay = _this5.xhrOptions.widgetTransitionDelay;
-						delay = _this5.xhrOptions.swapContent(_this5.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward") || delay;
+						var delay = _this6.xhrOptions.widgetTransitionDelay;
+						delay = _this6.xhrOptions.swapContent(_this6.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward") || delay;
 						setTimeout(next, delay);
 					}, function (next) {
-						_this5.transitionWidgetsIn(newContent, _this5.pageState, oldPageState, next);
+						_this6.transitionWidgetsIn(newContent, _this6.pageState, oldPageState, next);
 					}];
 
 					var stepIndex = 0;
@@ -11815,15 +11820,15 @@ var Site = function (_EventEmitter) {
 						if (stepIndex < steps.length) {
 							steps[stepIndex++](next);
 						} else {
-							_this5.emit("xhrPageChanged");
+							_this6.emit("xhrPageChanged");
 						}
 					};
 
 					next();
 				};
 
-				if (_this5.xhrOptions.loadImages) {
-					_this5.preloadContent(newContent, _this5.xhrOptions.imageLoadTimeout, finalize);
+				if (_this6.xhrOptions.loadImages) {
+					_this6.preloadContent(newContent, _this6.xhrOptions.imageLoadTimeout, finalize);
 				} else {
 					finalize();
 				}
@@ -11832,7 +11837,7 @@ var Site = function (_EventEmitter) {
 	}, {
 		key: "transitionWidgetsIn",
 		value: function transitionWidgetsIn(targetEl, newState, oldState, callback) {
-			var _this6 = this;
+			var _this7 = this;
 
 			var foundTransition = false;
 			var finalDelay = 0;
@@ -11840,11 +11845,11 @@ var Site = function (_EventEmitter) {
 			targetEl.find("[data-widget]").each(function (index, el) {
 
 				el = $(el);
-				var widgets = _this6.getWidgetDefs(el);
+				var widgets = _this7.getWidgetDefs(el);
 
 				for (var k in widgets) {
 					if (widgets[k].instance && widgets[k].instance._transitionIn) {
-						var delay = widgets[k].instance._transitionIn(newState, oldState, _this6.xhrOptions.widgetTransitionDelay);
+						var delay = widgets[k].instance._transitionIn(newState, oldState, _this7.xhrOptions.widgetTransitionDelay);
 						foundTransition = true;
 						finalDelay = Math.max(delay, finalDelay);
 					}
@@ -11862,28 +11867,43 @@ var Site = function (_EventEmitter) {
 	}, {
 		key: "transitionWidgetsOut",
 		value: function transitionWidgetsOut(targetEl, newState, oldState, destroy, callback) {
-			var _this7 = this;
 
 			var foundTransition = false;
 			var finalDelay = 0;
 
-			targetEl.find("[data-widget]").each(function (index, el) {
+			var widgets = this.getAllWidgets(targetEl);
 
-				el = $(el);
-				var widgets = _this7.getWidgetDefs(el);
+			var _iteratorNormalCompletion = true;
+			var _didIteratorError = false;
+			var _iteratorError = undefined;
 
-				for (var k in widgets) {
-					var widget = widgets[k].instance;
-					if (widget && widget._transitionOut) {
-						foundTransition = true;
-						var delay = widget._transitionOut(newState, oldState, _this7.xhrOptions.widgetTransitionDelay);
+			try {
+				for (var _iterator = widgets[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+					var widget = _step.value;
+
+					foundTransition = true;
+					if (widget._transitionOut) {
+						var delay = widget._transitionOut(newState, oldState, this.xhrOptions.widgetTransitionDelay);
 						finalDelay = Math.max(delay, finalDelay);
 						if (destroy) {
 							widget.destroy();
 						}
 					}
 				}
-			});
+			} catch (err) {
+				_didIteratorError = true;
+				_iteratorError = err;
+			} finally {
+				try {
+					if (!_iteratorNormalCompletion && _iterator.return) {
+						_iterator.return();
+					}
+				} finally {
+					if (_didIteratorError) {
+						throw _iteratorError;
+					}
+				}
+			}
 
 			if (foundTransition && finalDelay) {
 				setTimeout(callback, finalDelay);

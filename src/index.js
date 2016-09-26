@@ -87,6 +87,8 @@ class Site extends EventEmitter {
   
   initLiveReload() {
     
+    return;
+    
     if(navigator.appName != "Netscape" || !window.location.href.match(/(2016|ngrok)/)) {
       return false;
     }
@@ -286,7 +288,7 @@ class Site extends EventEmitter {
 		
 		var loaded = (img) => {
 			images.push(img);
-			preloadedImages.push(img);
+			this.preloadedImages.push(img);
 			if(images.length == srcs.length) {
 				triggerCallback();
 			}
@@ -297,12 +299,11 @@ class Site extends EventEmitter {
 				triggerCallback();
 			}, timeout);
 		}
-		
-		$(srcs).each((k, src) => {
+    
+    let preloadItem = (src) => {
+      let img = $("<img>");
 			
-			var img = $("<img>");
-			
-			var hasLoaded = false;
+			let hasLoaded = false;
 			
 			img.on("load", () => {
 				if(!hasLoaded) {
@@ -318,8 +319,9 @@ class Site extends EventEmitter {
 					loaded(img);
 				}
 			}
-			
-		});
+    };
+		
+    srcs.map(preloadItem);
     
 	}
 	
@@ -342,9 +344,10 @@ class Site extends EventEmitter {
 			var self = $(el);
 			
 			// Get images from 'style' attribute of div elements only
-			self.find("div[style], div.preload").each(() => {
-				if(el.style.backgroundImage && typeof el.style.backgroundImage == 'string') {
-					var match = el.style.backgroundImage.match(/url\((.+)\)/);
+			self.find("[style], .preload").each((k, el) => {
+        let backgroundImage = $(el).css('backgroundImage');
+				if(backgroundImage) {
+					var match = backgroundImage.match(/url\((.+)\)/);
 					if(match) {
 						var src = match[1].replace(/(^[\'\"]|[\'\"]$)/g, '');
 						images.push(src);
@@ -353,7 +356,7 @@ class Site extends EventEmitter {
 			});
 			
 			// Get 'src' attributes from images
-			self.find("img").each(() => {
+			self.find("img").each((k, el) => {
 				images.push(el.src);
 			});
 			

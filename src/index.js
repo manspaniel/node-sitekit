@@ -6,7 +6,7 @@ const jQuery = (() => {
   require("jquery-ui/ui/keycode");
   require("jquery-ui/ui/widget");
   window.jQuery = oldjQuery;
-  window.$ = old$;  
+  window.$ = old$;
   return jQuery;
 })();
 const $ = jQuery;
@@ -149,7 +149,7 @@ class Site extends EventEmitter {
   getAllWidgets(el) {
     let result = [];
     let widgets = $('[data-widget]', el || document.body);
-    if(el) widgets = widgets.add(el);    
+    if(el) widgets = widgets.add(el);
     // debugger;
     widgets.each((k, el) => {
       let widgetNames = $.data(el, 'widgetNames');
@@ -737,17 +737,21 @@ class Site extends EventEmitter {
 		
 		// Add event listeners to links where appropriate
 		this.handleXHRLinks();
+    
+    if(history.replaceState) {
+      history.replaceState({}, window.title, window.location.href)
+    }
 		
 		// Handle browser back button
 		window.addEventListener("popstate", (e) => {
-			var popped = ('state' in window.history && window.history.state !== null);
-			if(popped) {
-				if(e.state) {
-					this.goToURL(window.location.href, true);
-				} else {
-					window.location.reload();
-				}
+			// var popped = ('state' in window.history && window.history.state !== null);
+			// if(popped) {
+			if(e.state) {
+				this.goToURL(window.location.href, true);
+			} else {
+				window.location.reload();
 			}
+			// }
 		});
 		
 	}

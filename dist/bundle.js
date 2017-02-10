@@ -11939,16 +11939,20 @@ var Site = function (_EventEmitter) {
 			// Add event listeners to links where appropriate
 			this.handleXHRLinks();
 
+			if (history.replaceState) {
+				history.replaceState({}, window.title, window.location.href);
+			}
+
 			// Handle browser back button
 			window.addEventListener("popstate", function (e) {
-				var popped = 'state' in window.history && window.history.state !== null;
-				if (popped) {
-					if (e.state) {
-						_this8.goToURL(window.location.href, true);
-					} else {
-						window.location.reload();
-					}
+				// var popped = ('state' in window.history && window.history.state !== null);
+				// if(popped) {
+				if (e.state) {
+					_this8.goToURL(window.location.href, true);
+				} else {
+					window.location.reload();
 				}
+				// }
 			});
 		}
 	}, {

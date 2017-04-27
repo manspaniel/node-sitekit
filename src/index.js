@@ -470,7 +470,7 @@ class Site extends EventEmitter {
 		
 		// See if any widgets want to intercept this request instead
 		var allWidgets = this.getAllWidgets();
-		var urlPath = url.match(/:\/\/[^\/]+(.*)/);
+		var urlPath = url.replace(/\#.+$/, '').match(/:\/\/[^\/]+(.*)/)
 		for(var k in allWidgets) {
 			var widget = allWidgets[k];
 			if(widget && widget.xhrPageWillLoad) {
@@ -749,7 +749,7 @@ class Site extends EventEmitter {
 			if(e.state) {
 				this.goToURL(window.location.href, true);
 			} else {
-				window.location.reload();
+				// window.location.reload();
 			}
 			// }
 		});
@@ -760,8 +760,7 @@ class Site extends EventEmitter {
 		
 		targetEl = $(targetEl || document.body);
 		
-		//var baseURL = document.baseURI.match(/^[a-z]+[\:\/]+[^\/]+/i)[0];
-        var baseURL = window.location.origin;
+    const baseURL = window.location.origin;
 		
 		targetEl.find("a").each((index, el) => {
 			var linkEl = $(el);
@@ -790,9 +789,12 @@ class Site extends EventEmitter {
 			
 			linkEl.click((e) => {
 				if(!e.metaKey && !e.ctrlKey) {
-					e.preventDefault();
-					this.emit('xhrLinkClick', $(linkEl));
-					this.goToURL(el.href);
+					this.emit('xhrLinkClick', e, $(linkEl));
+          // A dev can use e.preventDefault() to also prevent any XHR transitions!
+          if(!e.isDefaultPrevented()) {
+            e.preventDefault();
+  					this.goToURL(el.href);
+          }
 				}
 			});
 			

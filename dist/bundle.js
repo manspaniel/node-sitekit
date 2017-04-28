@@ -11945,14 +11945,16 @@ var Site = function (_EventEmitter) {
 
 			// Handle browser back button
 			window.addEventListener("popstate", function (e) {
-				// var popped = ('state' in window.history && window.history.state !== null);
-				// if(popped) {
 				if (e.state) {
-					_this8.goToURL(window.location.href, true);
-				} else {}
-				// window.location.reload();
-
-				// }
+					var wasDefaultPrevented = false;
+					e.preventDefault = function () {
+						wasDefaultPrevented = true;
+					};
+					_this8.emit('xhrPopState', e);
+					if (!wasDefaultPrevented) {
+						_this8.goToURL(window.location.href, true);
+					}
+				}
 			});
 		}
 	}, {

@@ -744,14 +744,16 @@ class Site extends EventEmitter {
 		
 		// Handle browser back button
 		window.addEventListener("popstate", (e) => {
-			// var popped = ('state' in window.history && window.history.state !== null);
-			// if(popped) {
 			if(e.state) {
-				this.goToURL(window.location.href, true);
-			} else {
-				// window.location.reload();
-			}
-			// }
+        let wasDefaultPrevented = false
+        e.preventDefault = () => {
+          wasDefaultPrevented = true
+        }
+        this.emit('xhrPopState', e)
+        if(!wasDefaultPrevented) {
+  				this.goToURL(window.location.href, true);
+        }
+      }
 		});
 		
 	}

@@ -11733,9 +11733,24 @@ var Site = function (_EventEmitter) {
 					// Swap menus out
 					result.find("ul.menu").each(function (k, item) {
 
-						var id = item.getAttribute('id');
-						var el = $('#' + id).html(item.innerHTML);
-						_this6.handleXHRLinks(el);
+						if (item.parentNode.parentNode.getAttribute('data-swap-classes')) {
+							// Just swap classes for each li
+							var id = item.getAttribute('id');
+							if (!id) return;
+							var el = $('#' + id);
+
+							var existingItems = el.find("li");
+
+							$(item).find("li").each(function (k, li) {
+								existingItems[k].className = li.className;
+							});
+						} else {
+							// Swap the entire contents (default behaviour)
+							var id = item.getAttribute('id');
+							if (!id) return;
+							var el = $('#' + id).html(item.innerHTML);
+							_this6.handleXHRLinks(el);
+						}
 					});
 
 					// Swap WP 'Edit Post' link

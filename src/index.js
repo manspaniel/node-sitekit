@@ -477,14 +477,23 @@ class Site extends EventEmitter {
 				var result = widget.xhrPageWillLoad(urlPath, url);
 				if(result === false) {
 					history.pushState({}, null, originalURL);
+          if(window.ga) {
+            // Inform Google Analytics
+            ga('send', {
+              hitType: 'pageview',
+              page: location.pathname
+            });
+          }
 					return;
 				}
 			}
 		}
 		
-		var htmlBody = $("html,body").stop(true).animate({scrollTop: 0}, this.xhrOptions.scrollAnimation).one('scroll', () => {
-			htmlBody.stop(true);
-		});
+    if(this.xhrOptions.scrollAnimation) {
+  		var htmlBody = $("html,body").stop(true).animate({scrollTop: 0}, this.xhrOptions.scrollAnimation).one('scroll', () => {
+  			htmlBody.stop(true);
+  		});
+    }
 		
 		this.emit("xhrLoadStart");
 		
@@ -547,18 +556,20 @@ class Site extends EventEmitter {
             // Just swap classes for each li
             var id = item.getAttribute('id');
             if(!id) return
-  					var el = $('#'+id)
+  					var el = $('#'+id.replace(/\-[0-9]+/, ''))
             
             var existingItems = el.find("li")
             
-            $(item).find("li").each((k, li) => {
-              existingItems[k].className = li.className
-            })
+            if(existingItems.length) {
+              $(item).find("li").each((k, li) => {
+                existingItems[k].className = li.className
+              })
+            }
 					} else {
             // Swap the entire contents (default behaviour)
   					var id = item.getAttribute('id');
             if(!id) return
-  					var el = $('#'+id).html(item.innerHTML);
+  					var el = $('#'+id.replace(/\-[0-9]+/, '')).html(item.innerHTML);
   					this.handleXHRLinks(el);
           }
 					
@@ -610,7 +621,7 @@ class Site extends EventEmitter {
 				});
 				
 				// Grab old content, by wrapping it in a span
-				this.XHRPageContainer.wrapInner("<div class='xhr-page-contents'></div>");
+				this.XHRPageContainer.wrapInner("<span class='xhr-page-contents'></span>");
 				var oldContent = this.XHRPageContainer.children().first();
 				
 				// Add new content to the page
@@ -625,6 +636,13 @@ class Site extends EventEmitter {
 				// Apply to history
 				if(!dontPush) {
 					history.pushState({}, title, originalURL);
+          if(window.ga) {
+            // Inform Google Analytics
+            ga('send', {
+              hitType: 'pageview',
+              page: location.pathname
+            });
+          }
 				}
 				
 				// Destroy existing widgets
@@ -792,6 +810,10 @@ class Site extends EventEmitter {
 				// Link is not on this site
 				return;
 			}
+      if(url.match(/(wp-admin|wp-login)/g)) {
+        // A bit too wordpressy
+        return;
+      }
 			if(url.match(/\.[a-z]$/i) || url.match(/^(mailto|tel)\:/i)) {
 				// Link is a file
 				return;

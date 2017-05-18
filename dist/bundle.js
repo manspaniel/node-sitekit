@@ -11667,14 +11667,23 @@ var Site = function (_EventEmitter) {
 					var result = widget.xhrPageWillLoad(urlPath, url);
 					if (result === false) {
 						history.pushState({}, null, originalURL);
+						if (window.ga) {
+							// Inform Google Analytics
+							ga('send', {
+								hitType: 'pageview',
+								page: location.pathname
+							});
+						}
 						return;
 					}
 				}
 			}
 
-			var htmlBody = $("html,body").stop(true).animate({ scrollTop: 0 }, this.xhrOptions.scrollAnimation).one('scroll', function () {
-				htmlBody.stop(true);
-			});
+			if (this.xhrOptions.scrollAnimation) {
+				var htmlBody = $("html,body").stop(true).animate({ scrollTop: 0 }, this.xhrOptions.scrollAnimation).one('scroll', function () {
+					htmlBody.stop(true);
+				});
+			}
 
 			this.emit("xhrLoadStart");
 
@@ -11737,18 +11746,20 @@ var Site = function (_EventEmitter) {
 							// Just swap classes for each li
 							var id = item.getAttribute('id');
 							if (!id) return;
-							var el = $('#' + id);
+							var el = $('#' + id.replace(/\-[0-9]+/, ''));
 
 							var existingItems = el.find("li");
 
-							$(item).find("li").each(function (k, li) {
-								existingItems[k].className = li.className;
-							});
+							if (existingItems.length) {
+								$(item).find("li").each(function (k, li) {
+									existingItems[k].className = li.className;
+								});
+							}
 						} else {
 							// Swap the entire contents (default behaviour)
 							var id = item.getAttribute('id');
 							if (!id) return;
-							var el = $('#' + id).html(item.innerHTML);
+							var el = $('#' + id.replace(/\-[0-9]+/, '')).html(item.innerHTML);
 							_this6.handleXHRLinks(el);
 						}
 					});
@@ -11796,7 +11807,7 @@ var Site = function (_EventEmitter) {
 					});
 
 					// Grab old content, by wrapping it in a span
-					_this6.XHRPageContainer.wrapInner("<div class='xhr-page-contents'></div>");
+					_this6.XHRPageContainer.wrapInner("<span class='xhr-page-contents'></span>");
 					var oldContent = _this6.XHRPageContainer.children().first();
 
 					// Add new content to the page
@@ -11809,6 +11820,13 @@ var Site = function (_EventEmitter) {
 					// Apply to history
 					if (!dontPush) {
 						history.pushState({}, title, originalURL);
+						if (window.ga) {
+							// Inform Google Analytics
+							ga('send', {
+								hitType: 'pageview',
+								page: location.pathname
+							});
+						}
 					}
 
 					// Destroy existing widgets
@@ -11992,6 +12010,10 @@ var Site = function (_EventEmitter) {
 				var url = el.href;
 				if (url.indexOf(baseURL) !== 0) {
 					// Link is not on this site
+					return;
+				}
+				if (url.match(/(wp-admin|wp-login)/g)) {
+					// A bit too wordpressy
 					return;
 				}
 				if (url.match(/\.[a-z]$/i) || url.match(/^(mailto|tel)\:/i)) {

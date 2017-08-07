@@ -37,7 +37,7 @@ class Site extends EventEmitter {
   		loadImages: true,
   		imageLoadTimeout: 3000,
   		widgetTransitionDelay: 0,
-  		cachePages: false,
+  		cachePages: true,
   		swapContent: (container, originalContent, newContent, direction) => {
   			
   			var duration = this.xhrOptions.widgetTransitionDelay || 500;
@@ -52,7 +52,7 @@ class Site extends EventEmitter {
   					
   					// Fade in new content
   					newContent.css({
-  						display: 'inline',
+  						display: 'block',
   						opacity: 0
   					}).animate({
   						opacity: 1
@@ -272,11 +272,14 @@ class Site extends EventEmitter {
 	preloadImages(srcs, timeout, callback) {
 		
 		var images = [];
+    
+    console.log("Preloading images", srcs)
 		
 		var callbackCalled = false;
 		var triggerCallback = () => {
 			if(!callbackCalled) {
 				callbackCalled = true;
+        console.log("Ready")
 				if(callback) callback();
 			}
 		};
@@ -288,7 +291,7 @@ class Site extends EventEmitter {
 		
 		var loaded = (img) => {
 			images.push(img);
-			this.preloadedImages.push(img);
+			this.preloadedImages.push(img[0]);
 			if(images.length == srcs.length) {
 				triggerCallback();
 			}
@@ -512,7 +515,7 @@ class Site extends EventEmitter {
 			var result = $("<div>"+response+"</div>");
 			
 			// Pull out the contents
-			var foundPageContainer = result.find("[data-page-container]:first");
+			var foundPageContainer = result.find(".xhr-page-contents, [data-page-container]").first();
 			
 			if(foundPageContainer.length === 0) {
 				// Could not find a page container element :/ just link to the page
@@ -621,8 +624,11 @@ class Site extends EventEmitter {
 				});
 				
 				// Grab old content, by wrapping it in a span
-				this.XHRPageContainer.wrapInner("<span class='xhr-page-contents'></span>");
-				var oldContent = this.XHRPageContainer.children().first();
+        let oldContent = this.XHRPageContainer.children('.xhr-page-contents')
+        if (oldContent.length === 0) {
+  				this.XHRPageContainer.wrapInner("<span class='xhr-page-contents'></span>");
+  				oldContent = this.XHRPageContainer.children().first();
+        }
 				
 				// Add new content to the page
 				try {
@@ -748,6 +754,12 @@ class Site extends EventEmitter {
 		}
 		
 	}
+  
+  wrapXHRInner () {
+    const target = this.XHRPageContainer
+    const wrapper = $("<span class='xhr-page-contents'></span>")
+    wrapper.appendTo(target).append(target.children())
+  }
 	
 	initXHRPageSystem() {
     if(!this.xhrOptions.xhrEnabled) return;

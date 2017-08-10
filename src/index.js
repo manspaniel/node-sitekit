@@ -150,7 +150,6 @@ class Site extends EventEmitter {
     let result = [];
     let widgets = $('[data-widget]', el || document.body);
     if(el) widgets = widgets.add(el);
-    // debugger;
     widgets.each((k, el) => {
       let widgetNames = $.data(el, 'widgetNames');
       for(let k in widgetNames) {
@@ -273,13 +272,10 @@ class Site extends EventEmitter {
 		
 		var images = [];
     
-    console.log("Preloading images", srcs)
-		
 		var callbackCalled = false;
 		var triggerCallback = () => {
 			if(!callbackCalled) {
 				callbackCalled = true;
-        console.log("Ready")
 				if(callback) callback();
 			}
 		};
@@ -593,7 +589,7 @@ class Site extends EventEmitter {
 						
 						var scriptSrc = el.src.replace(/\?.*$/, '');
 						var includeScript = true;
-						existingScripts.each(() => {
+						existingScripts.each((k, el) => {
 							var elSrc = el.src.replace(/\?.*$/, '');
 							if(scriptSrc == elSrc) {
 								includeScript = false;
@@ -608,7 +604,7 @@ class Site extends EventEmitter {
 						
 						var linkHref = el.href.replace(/\?.*$/, '');
 						var includeStyles = true;
-						existingStylesheets.each(() => {
+						existingStylesheets.each((k, el) => {
 							var elHref = el.href.replace(/\?.*$/, '');
 							if(linkHref == elHref) {
 								includeStyles = false;

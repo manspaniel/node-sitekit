@@ -11531,7 +11531,6 @@ var Site = function (_EventEmitter) {
 			var result = [];
 			var widgets = $('[data-widget]', el || document.body);
 			if (el) widgets = widgets.add(el);
-			// debugger;
 			widgets.each(function (k, el) {
 				var widgetNames = $.data(el, 'widgetNames');
 				for (var _k in widgetNames) {
@@ -11981,21 +11980,23 @@ var Site = function (_EventEmitter) {
 
 							var scriptSrc = el.src.replace(/\?.*$/, '');
 							var includeScript = true;
-							existingScripts.each(function () {
+							existingScripts.each(function (k, el) {
 								var elSrc = el.src.replace(/\?.*$/, '');
 								if (scriptSrc == elSrc) {
+									console.log("Not including " + scriptSrc, elSrc);
 									includeScript = false;
 								}
 							});
 
 							if (includeScript) {
+								console.log("INCLUDING: " + scriptSrc);
 								$(el).appendTo(document.head);
 							}
 						} else if (el.tagName == "LINK") {
 
 							var linkHref = el.href.replace(/\?.*$/, '');
 							var includeStyles = true;
-							existingStylesheets.each(function () {
+							existingStylesheets.each(function (k, el) {
 								var elHref = el.href.replace(/\?.*$/, '');
 								if (linkHref == elHref) {
 									includeStyles = false;

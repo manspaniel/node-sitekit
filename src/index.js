@@ -540,6 +540,13 @@ class Site extends EventEmitter {
 				
 				var oldPageState = this.pageState;
 				this.pageState = result.find("pagestate").data('state');
+        
+        // Look for gravity forms scripts in the footer
+        // result.find("script").each((k, el) => {
+        //   if(!el.getAttribute('src') && el.innerHTML.indexOf("var gf_global")) {
+        //
+        //   }
+        // })
 				
 				// Set page title
 				$("head title").html(title);

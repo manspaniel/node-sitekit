@@ -11654,13 +11654,10 @@ var Site = function (_EventEmitter) {
 
 			var images = [];
 
-			console.log("Preloading images", srcs);
-
 			var callbackCalled = false;
 			var triggerCallback = function triggerCallback() {
 				if (!callbackCalled) {
 					callbackCalled = true;
-					console.log("Ready");
 					if (callback) callback();
 				}
 			};
@@ -11933,6 +11930,13 @@ var Site = function (_EventEmitter) {
 					var oldPageState = _this6.pageState;
 					_this6.pageState = result.find("pagestate").data('state');
 
+					// Look for gravity forms scripts in the footer
+					// result.find("script").each((k, el) => {
+					//   if(!el.getAttribute('src') && el.innerHTML.indexOf("var gf_global")) {
+					//
+					//   }
+					// })
+
 					// Set page title
 					$("head title").html(title);
 					document.body.className = bodyClass + " xhr-transitioning-out";
@@ -11983,13 +11987,11 @@ var Site = function (_EventEmitter) {
 							existingScripts.each(function (k, el) {
 								var elSrc = el.src.replace(/\?.*$/, '');
 								if (scriptSrc == elSrc) {
-									console.log("Not including " + scriptSrc, elSrc);
 									includeScript = false;
 								}
 							});
 
 							if (includeScript) {
-								console.log("INCLUDING: " + scriptSrc);
 								$(el).appendTo(document.head);
 							}
 						} else if (el.tagName == "LINK") {

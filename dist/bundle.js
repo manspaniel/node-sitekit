@@ -11404,13 +11404,18 @@ var Site = function (_EventEmitter) {
 
 		_this.xhrOptions = {
 			scrollAnimation: {
-				duration: 400
+				duration: 220
 			},
 			xhrEnabled: true,
 			loadImages: true,
 			imageLoadTimeout: 3000,
 			widgetTransitionDelay: 0,
 			cachePages: true,
+			swapBodyClasses: function swapBodyClasses(newClasses) {
+				setTimeout(function () {
+					document.body.className = newClasses;
+				}, (_this.xhrOptions.widgetTransitionDelay || 500) / 2);
+			},
 			swapContent: function swapContent(container, originalContent, newContent, direction) {
 
 				var duration = _this.xhrOptions.widgetTransitionDelay || 500;
@@ -11544,11 +11549,15 @@ var Site = function (_EventEmitter) {
 		}
 	}, {
 		key: "triggerAllWidgets",
-		value: function triggerAllWidgets(methodName, target) {
+		value: function triggerAllWidgets(methodName) {
+			var target = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
-			var args = Array.prototype.slice.call(arguments, 2);
 
 			var widgets = this.getAllWidgets(target);
+
+			for (var _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+				args[_key - 2] = arguments[_key];
+			}
 
 			for (var k in widgets) {
 				var widget = widgets[k];
@@ -11641,11 +11650,11 @@ var Site = function (_EventEmitter) {
 		}
 	}, {
 		key: "widget",
-		value: function widget(name, def) {
+		value: function widget(name, def, explicitBase) {
 			if (name.indexOf('.') === -1) {
 				name = 'ui.' + name;
 			}
-			$.widget(name, $.extend({}, baseWidget, def));
+			$.widget(name, $.extend({}, baseWidget, explicitBase || {}, def));
 		}
 	}, {
 		key: "preloadImages",
@@ -11939,7 +11948,7 @@ var Site = function (_EventEmitter) {
 
 					// Set page title
 					$("head title").html(title);
-					document.body.className = bodyClass + " xhr-transitioning-out";
+					_this6.xhrOptions.swapBodyClasses(bodyClass + " xhr-transitioning-out");
 
 					var existingScripts = $(document.head).find("script");
 					var existingStylesheets = $(document.head).find("link[rel=stylesheet]");
@@ -11951,7 +11960,8 @@ var Site = function (_EventEmitter) {
 							// Just swap classes for each li
 							var id = item.getAttribute('id');
 							if (!id) return;
-							var el = $('#' + id.replace(/\-[0-9]+/, ''));
+							// var el = $('#'+id.replace(/\-[0-9]+/, ''))
+							var el = $('#' + id);
 
 							var existingItems = el.find("li");
 
@@ -11964,7 +11974,8 @@ var Site = function (_EventEmitter) {
 							// Swap the entire contents (default behaviour)
 							var id = item.getAttribute('id');
 							if (!id) return;
-							var el = $('#' + id.replace(/\-[0-9]+/, '')).html(item.innerHTML);
+							// var el = $('#'+id.replace(/\-[0-9]+/, ''))
+							var el = $('#' + id).html(item.innerHTML);
 							_this6.handleXHRLinks(el);
 						}
 					});
@@ -12240,8 +12251,10 @@ var Site = function (_EventEmitter) {
 					return;
 				}
 
-				_this9.pagePreloadQueue.push(el.href);
-				_this9.preloadPages();
+				if (_this9.xhrOptions.cachePages) {
+					_this9.pagePreloadQueue.push(el.href);
+					_this9.preloadPages();
+				}
 
 				linkEl.click(function (e) {
 					if (!e.metaKey && !e.ctrlKey) {

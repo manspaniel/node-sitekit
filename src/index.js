@@ -31,13 +31,18 @@ class Site extends EventEmitter {
     
     this.xhrOptions = {
   		scrollAnimation: {
-  			duration: 400
+  			duration: 220
   		},
       xhrEnabled: true,
   		loadImages: true,
   		imageLoadTimeout: 3000,
   		widgetTransitionDelay: 0,
   		cachePages: true,
+      swapBodyClasses: (newClasses) => {
+        setTimeout(() => {
+          document.body.className = newClasses
+        }, (this.xhrOptions.widgetTransitionDelay || 500) / 2)
+      },
   		swapContent: (container, originalContent, newContent, direction) => {
   			
   			var duration = this.xhrOptions.widgetTransitionDelay || 500;
@@ -162,9 +167,7 @@ class Site extends EventEmitter {
     return result;
   }
   
-  triggerAllWidgets(methodName, target) {
-    
-    let args = Array.prototype.slice.call(arguments, 2);
+  triggerAllWidgets(methodName, target = null, ...args) {
     
     let widgets = this.getAllWidgets(target);
     
@@ -261,11 +264,11 @@ class Site extends EventEmitter {
     
   }
   
-  widget(name, def) {
+  widget(name, def, explicitBase) {
     if(name.indexOf('.') === -1) {
       name = 'ui.'+name;
     }
-    $.widget(name, $.extend({}, baseWidget, def));
+    $.widget(name, $.extend({}, baseWidget, explicitBase || {}, def));
   }
   
 	preloadImages(srcs, timeout, callback) {
@@ -550,7 +553,7 @@ class Site extends EventEmitter {
 				
 				// Set page title
 				$("head title").html(title);
-				document.body.className = bodyClass + " xhr-transitioning-out";
+        this.xhrOptions.swapBodyClasses(bodyClass + " xhr-transitioning-out")
 				
 				var existingScripts = $(document.head).find("script");
 				var existingStylesheets = $(document.head).find("link[rel=stylesheet]");
@@ -562,7 +565,8 @@ class Site extends EventEmitter {
             // Just swap classes for each li
             var id = item.getAttribute('id');
             if(!id) return
-  					var el = $('#'+id.replace(/\-[0-9]+/, ''))
+  					// var el = $('#'+id.replace(/\-[0-9]+/, ''))
+            var el = $('#'+id)
             
             var existingItems = el.find("li")
             
@@ -575,7 +579,9 @@ class Site extends EventEmitter {
             // Swap the entire contents (default behaviour)
   					var id = item.getAttribute('id');
             if(!id) return
-  					var el = $('#'+id.replace(/\-[0-9]+/, '')).html(item.innerHTML);
+            // var el = $('#'+id.replace(/\-[0-9]+/, ''))
+  					var el = $('#'+id)
+              .html(item.innerHTML);
   					this.handleXHRLinks(el);
           }
 					
@@ -838,8 +844,10 @@ class Site extends EventEmitter {
 				return;
 			}
 			
-			this.pagePreloadQueue.push(el.href);
-			this.preloadPages();
+      if (this.xhrOptions.cachePages) {
+  			this.pagePreloadQueue.push(el.href);
+  			this.preloadPages();
+      }
 			
 			linkEl.click((e) => {
 				if(!e.metaKey && !e.ctrlKey) {

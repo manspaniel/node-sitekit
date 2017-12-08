@@ -1,7 +1,7 @@
 const jQuery = (() => {
   let oldjQuery = window.jQuery;
   let old$ = window.$;
-  let jQuery = window.jQuery = window.$ = require("jquery");
+  let jQuery = window.jQuery = window.$ = require("jquery.transit");
   require("jquery-ui/ui/version");
   require("jquery-ui/ui/keycode");
   require("jquery-ui/ui/widget");
@@ -67,6 +67,8 @@ class Site extends EventEmitter {
   					
   				}
   			});
+        
+        return duration + 500
   			
   		},
   		filterBodyClasses: (oldClasses, newClasses) => {
@@ -85,8 +87,10 @@ class Site extends EventEmitter {
   
   domReady() {
     
+    this.pageState = $("pagestate").data('state');
     this.initWidgets();
     this.initXHRPageSystem();
+    this.transitionWidgetsIn($(document.body), this.pageState, { initial: true }, () => {})
     
   }
   
@@ -854,8 +858,10 @@ class Site extends EventEmitter {
 					this.emit('xhrLinkClick', e, $(linkEl));
           // A dev can use e.preventDefault() to also prevent any XHR transitions!
           if(!e.isDefaultPrevented()) {
-            e.preventDefault();
-  					this.goToURL(el.href);
+            e.preventDefault()
+            if (!this.clickingDisabled) {
+    					this.goToURL(el.href)
+            }
           }
 				}
 			});
@@ -863,6 +869,17 @@ class Site extends EventEmitter {
 		});
 		
 	}
+  
+  disableClickingFor (duration) {
+    if (this.clickingDisabled) {
+      duration = Math.max(this.clickingDisabled, duration)
+    }
+    this.clickingDisabled = duration
+    clearTimeout(this.disabledClickTimer)
+    this.disabledClickTimer = setTimeout(() => {
+      this.clickingDisabled = false
+    }, duration)
+  }
 	
 	callAPI(method, args, callback) {
 		

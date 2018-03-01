@@ -86,6 +86,8 @@ class Site extends EventEmitter {
   }
   
   domReady() {
+    if (this._domReadyCalled) return
+    this._domReadyCalled = true
     
     this.pageState = $("pagestate").data('state');
     this.initWidgets();
@@ -839,7 +841,7 @@ class Site extends EventEmitter {
         // A bit too wordpressy
         return;
       }
-			if(url.match(/\.[a-z]$/i) || url.match(/^(mailto|tel)\:/i)) {
+			if(url.match(/\.[a-z]$/i) || url.match(/(mailto|tel):/i)) {
 				// Link is a file
 				return;
 			}

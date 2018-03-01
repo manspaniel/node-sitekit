@@ -12209,6 +12209,8 @@ var Site = function (_EventEmitter) {
 	_createClass(Site, [{
 		key: "domReady",
 		value: function domReady() {
+			if (this._domReadyCalled) return;
+			this._domReadyCalled = true;
 
 			this.pageState = $("pagestate").data('state');
 			this.initWidgets();
@@ -12993,7 +12995,7 @@ var Site = function (_EventEmitter) {
 					// A bit too wordpressy
 					return;
 				}
-				if (url.match(/\.[a-z]$/i) || url.match(/^(mailto|tel)\:/i)) {
+				if (url.match(/\.[a-z]$/i) || url.match(/(mailto|tel):/i)) {
 					// Link is a file
 					return;
 				}

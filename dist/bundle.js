@@ -12819,10 +12819,10 @@ var Site = function (_EventEmitter) {
               return setTimeout(resolve, 6000);
             })]).then(next);
           }, function (next) {
-            swapMenus();
-            _this7.transitionWidgetsOut(_this7.XHRPageContainer, oldPageState, _this7.pageState, true, next);
+            _this7.transitionWidgetsOut(oldContent, oldPageState, _this7.pageState, true, next);
           }, function (next) {
             // Set up links and widgets
+            swapMenus();
             newContent.show();
             _this7.forceResizeWindow();
             _this7.handleXHRLinks(newContent);
@@ -13058,8 +13058,10 @@ var Site = function (_EventEmitter) {
         }
 
         if (_this10.xhrOptions.cachePages) {
-          _this10.pagePreloadQueue.push(el.href);
-          _this10.preloadPages();
+          if (!linkEl.data('no-preload') && linkEl.parents('[data-no-preload]').length === 0) {
+            _this10.pagePreloadQueue.push(el.href);
+            _this10.preloadPages();
+          }
         }
 
         linkEl.click(function (e) {

@@ -683,11 +683,11 @@ class Site extends EventEmitter {
             ]).then(next)
           },
 					(next) => {
-            swapMenus()
-						this.transitionWidgetsOut(this.XHRPageContainer, oldPageState, this.pageState, true, next)
+						this.transitionWidgetsOut(oldContent, oldPageState, this.pageState, true, next)
 					},
 					(next) => {
 						// Set up links and widgets
+            swapMenus()
 						newContent.show()
 						this.forceResizeWindow()
 						this.handleXHRLinks(newContent)
@@ -894,8 +894,10 @@ class Site extends EventEmitter {
 			}
 			
       if (this.xhrOptions.cachePages) {
-  			this.pagePreloadQueue.push(el.href)
-  			this.preloadPages()
+        if (!linkEl.data('no-preload') && linkEl.parents('[data-no-preload]').length === 0) {
+    			this.pagePreloadQueue.push(el.href)
+    			this.preloadPages()
+        }
       }
 			
 			linkEl.click((e) => {

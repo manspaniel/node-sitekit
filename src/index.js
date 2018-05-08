@@ -16,8 +16,10 @@ class Site extends EventEmitter {
   
   constructor() {
     
-    super()
-    
+		super()
+				
+		console.log(`Site made Ed.\nhttps://ed.com.au`)
+
     this.$ = jQuery
     this.preloadedImages = []
     
@@ -124,8 +126,8 @@ class Site extends EventEmitter {
     }
     
     check()
-  }
-  
+	}
+
   setGlobalState(state, reset) {
     
     for(var k in this.components) {
@@ -660,8 +662,14 @@ class Site extends EventEmitter {
 				newContent.hide()
 				
 				// Apply to history
-				if(!dontPush) {
-					history.pushState({}, title, originalURL)
+				if(!dontPush) { 
+					
+					history.replaceState(Object.assign({}, history.state, this.generateReplaceState('apply to history')), null)
+					history.pushState(
+						{},
+						title,
+						originalURL
+					)
           if(window.ga) {
             // Inform Google Analytics
             ga('send', {
@@ -700,7 +708,12 @@ class Site extends EventEmitter {
 						setTimeout(next, delay)
 					},
 					(next) => {
-            this.emit('xhrWillTransitionWidgetsIn')
+						this.emit('xhrWillTransitionWidgetsIn')
+						if(history.state && typeof history.state.scrollY === 'number' && !history.state.dontAutoScroll){
+							console.log('scrolling')
+							this.emit('xhrWillScrollToPrevPosition')
+							$('html, body').animate({scrollTop: history.state.scrollY}, 0)
+						}
 						this.transitionWidgetsIn(newContent, this.pageState, oldPageState, next)
 					}
 				]
@@ -746,7 +759,23 @@ class Site extends EventEmitter {
         return widget.__promiseToLoad
       })
     Promise.all(promises).then(callback).catch(err => callback())
-  }
+	}
+	
+	generateReplaceState(s){
+		if ('scrollRestoration' in history && history.scrollRestoration !== 'manual') {
+				history.scrollRestoration = 'manual';
+		}
+		const t = {
+			scrollY: window.scrollY
+			|| window.pageYOffset
+			|| document.documentElement.scrollTop,
+			scrollX: window.scrollX
+			|| window.pageXOffset
+			|| document.documentElement.scrollLeft,
+		}
+		console.log(s, t)
+		return t
+	}
 	
 	transitionWidgetsIn(targetEl, newState, oldState, callback) {
 		
@@ -842,8 +871,8 @@ class Site extends EventEmitter {
 		this.handleXHRLinks()
     
     if(history.replaceState) {
-      history.replaceState({}, window.title, window.location.href)
-    }
+      history.replaceState(window.history.state, window.title, window.location.href)
+		}
 		
 		// Handle browser back button
 		window.addEventListener("popstate", (e) => {

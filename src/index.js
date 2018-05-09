@@ -18,7 +18,7 @@ class Site extends EventEmitter {
     
 		super()
 				
-		console.log(`Site made Ed.\nhttps://ed.com.au`)
+		console.log(`Site made by ED.\nhttps://ed.com.au`)
 
     this.$ = jQuery
     this.preloadedImages = []

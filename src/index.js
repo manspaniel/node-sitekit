@@ -255,12 +255,17 @@ class Site extends EventEmitter {
         }
         
         // Spawn the widget, and grab it's instance
-        el[widget.name](options)
-        let instance = el[widget.name]('instance')
-        
-        // Save it to the components object
-        if(widget.identifier) {
-          this.components[widget.identifier] = instance
+        try {
+          el[widget.name](options)
+          let instance = el[widget.name]('instance')
+          
+          // Save it to the components object
+          if(widget.identifier) {
+            this.components[widget.identifier] = instance
+          }
+        } catch (err) {
+          this.reportError(`Error initializing widget '${widget.name}'`, err)
+          console.error(err)
         }
         
       }
@@ -273,6 +278,12 @@ class Site extends EventEmitter {
     
     this.emit('afterWidgetsInit')
     
+  }
+  
+  reportError (...args) {
+    for (let arg of args)  {
+      console.error(arg)
+    }
   }
   
   widget(name, def, explicitBase) {
@@ -662,7 +673,7 @@ class Site extends EventEmitter {
 				newContent.hide()
 				
 				// Apply to history
-				if(!dontPush) { 
+				if(!dontPush) {
 					
 					history.replaceState(Object.assign({}, history.state, this.generateReplaceState('apply to history')), null)
 					history.pushState(

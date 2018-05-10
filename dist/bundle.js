@@ -12392,12 +12392,17 @@ var Site = function (_EventEmitter) {
 					}
 
 					// Spawn the widget, and grab it's instance
-					el[widget.name](options);
-					var instance = el[widget.name]('instance');
+					try {
+						el[widget.name](options);
+						var instance = el[widget.name]('instance');
 
-					// Save it to the components object
-					if (widget.identifier) {
-						_this3.components[widget.identifier] = instance;
+						// Save it to the components object
+						if (widget.identifier) {
+							_this3.components[widget.identifier] = instance;
+						}
+					} catch (err) {
+						_this3.reportError("Error initializing widget '" + widget.name + "'", err);
+						console.error(err);
 					}
 				}
 
@@ -12407,6 +12412,38 @@ var Site = function (_EventEmitter) {
 			});
 
 			this.emit('afterWidgetsInit');
+		}
+	}, {
+		key: "reportError",
+		value: function reportError() {
+			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+				args[_key2] = arguments[_key2];
+			}
+
+			var _iteratorNormalCompletion = true;
+			var _didIteratorError = false;
+			var _iteratorError = undefined;
+
+			try {
+				for (var _iterator = args[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+					var arg = _step.value;
+
+					console.error(arg);
+				}
+			} catch (err) {
+				_didIteratorError = true;
+				_iteratorError = err;
+			} finally {
+				try {
+					if (!_iteratorNormalCompletion && _iterator.return) {
+						_iterator.return();
+					}
+				} finally {
+					if (_didIteratorError) {
+						throw _iteratorError;
+					}
+				}
+			}
 		}
 	}, {
 		key: "widget",
@@ -12953,13 +12990,13 @@ var Site = function (_EventEmitter) {
 
 			var widgets = this.getAllWidgets(targetEl);
 
-			var _iteratorNormalCompletion = true;
-			var _didIteratorError = false;
-			var _iteratorError = undefined;
+			var _iteratorNormalCompletion2 = true;
+			var _didIteratorError2 = false;
+			var _iteratorError2 = undefined;
 
 			try {
-				for (var _iterator = widgets[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-					var widget = _step.value;
+				for (var _iterator2 = widgets[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+					var widget = _step2.value;
 
 					foundTransition = true;
 					if (widget._transitionOut) {
@@ -12971,16 +13008,16 @@ var Site = function (_EventEmitter) {
 					}
 				}
 			} catch (err) {
-				_didIteratorError = true;
-				_iteratorError = err;
+				_didIteratorError2 = true;
+				_iteratorError2 = err;
 			} finally {
 				try {
-					if (!_iteratorNormalCompletion && _iterator.return) {
-						_iterator.return();
+					if (!_iteratorNormalCompletion2 && _iterator2.return) {
+						_iterator2.return();
 					}
 				} finally {
-					if (_didIteratorError) {
-						throw _iteratorError;
+					if (_didIteratorError2) {
+						throw _iteratorError2;
 					}
 				}
 			}

@@ -12138,7 +12138,7 @@ var Site = function (_EventEmitter) {
 
 		var _this = _possibleConstructorReturn(this, (Site.__proto__ || Object.getPrototypeOf(Site)).call(this));
 
-		console.log("Site made Ed.\nhttps://ed.com.au");
+		console.log("Site by ED.\nhttps://ed.com.au");
 
 		_this.$ = jQuery;
 		_this.preloadedImages = [];

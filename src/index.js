@@ -13,11 +13,11 @@ const $ = jQuery
 const EventEmitter = require('events').EventEmitter
 
 class Site extends EventEmitter {
-  
+
   constructor() {
-    
+
 		super()
-		
+
 		const style = `
 			font-size: 1px;
 			line-height:${20}px;padding:${20 * .5}px ${40 * .5}px;
@@ -30,15 +30,15 @@ class Site extends EventEmitter {
 
     this.$ = jQuery
     this.preloadedImages = []
-    
+
     this.pageCache = {}
     this.preloadedPages = {}
 
     this.pagePreloadQueue = []
     this.isPreloadingPages = false
-    
+
     this.XHRRequestCounter = 0
-    
+
     this.xhrOptions = {
   		scrollAnimation: {
   			duration: 220
@@ -54,17 +54,17 @@ class Site extends EventEmitter {
         }, (this.xhrOptions.widgetTransitionDelay || 500) / 2)
       },
   		swapContent: (container, originalContent, newContent, direction) => {
-  			
+
   			var duration = this.xhrOptions.widgetTransitionDelay || 500
-  			
+
   			// Fade out old content
   			originalContent.fadeOut({
   				duration: duration/2,
   				complete: function() {
-  					
+
   					// Not forgetting to remove the old content
   					originalContent.remove()
-  					
+
   					// Fade in new content
   					newContent.css({
   						display: 'block',
@@ -74,31 +74,31 @@ class Site extends EventEmitter {
   					}, {
   						duration: duration/2
   					})
-  					
+
   				}
   			})
-        
+
         return duration + 500
-  			
+
   		},
   		filterBodyClasses: (oldClasses, newClasses) => {
   			return newClasses
   		}
   	}
-    
+
     // Init dev mode
     this.initLiveReload()
-    
+
     this.components = {}
-    
+
     // Wait for DOM load
     jQuery(() => this.domReady())
   }
-  
+
   domReady() {
     if (this._domReadyCalled) return
     this._domReadyCalled = true
-    
+
     this.pageState = $("pagestate").data('state')
     this.initWidgets()
     this.initXHRPageSystem()
@@ -108,17 +108,17 @@ class Site extends EventEmitter {
     this.transitionWidgetsIn($(document.body), this.pageState, { initial: true }, () => {})
     this.emit('ready')
   }
-  
+
   initLiveReload() {
-    
+
     return
-    
+
     if(navigator.appName != "Netscape" || !window.location.href.match(/(2016|ngrok)/)) {
       return false
     }
-    
+
     let refresh = () => history.go(0)
-    
+
     let check = () => {
       $.ajax({
         url: '/devcheck',
@@ -132,12 +132,12 @@ class Site extends EventEmitter {
         }
       })
     }
-    
+
     check()
 	}
 
   setGlobalState(state, reset) {
-    
+
     for(var k in this.components) {
       var component = this.components[k]
       if(component && component.setState) {
@@ -146,9 +146,9 @@ class Site extends EventEmitter {
         }
       }
     }
-    
+
   }
-  
+
   findWidgets(name, el) {
     let result = []
     let widgets = $('[data-widget]', el || document.body).each((k, el) => {
@@ -160,7 +160,7 @@ class Site extends EventEmitter {
     })
     return result
   }
-  
+
   findWidget(name, el) {
     let widgets = this.findWidgets(name, el)
     if(widgets && widgets.length) {
@@ -169,7 +169,7 @@ class Site extends EventEmitter {
       return null
     }
   }
-  
+
   getAllWidgets(el) {
     let result = []
     let widgets = $('[data-widget]', el || document.body)
@@ -185,57 +185,57 @@ class Site extends EventEmitter {
     })
     return result
   }
-  
+
   triggerAllWidgets(methodName, target = null, ...args) {
-    
+
     let widgets = this.getAllWidgets(target)
-    
+
     for(let k in widgets) {
       let widget = widgets[k]
       if(widget && methodName in widget) {
         widget[methodName].apply(widget, args)
       }
     }
-    
+
   }
-  
+
   getWidgetDefs(el) {
-    
+
     el = $(el)
-    
+
     let widgets = (el.attr('data-widget') || el.attr('data-widgets')).split(/\,\s*/g)
     let isInitialized = el.data('hasBeenInitialized')
-    
+
     for(let k in widgets) {
-      
+
       let widgetInfo = widgets[k].split('#')
-      
+
       widgets[k] = {
         name: widgetInfo[0],
         identifier: widgetInfo[1],
         instance: isInitialized ? el[widgetInfo[0]]('instance') : null
       }
-      
+
     }
-    
+
     return widgets
-    
+
   }
-  
+
   initWidgets(targetEl) {
-    
+
     targetEl = $(targetEl || document.body)
-    
+
     // Look for uninitialized widgets
     targetEl.find("[data-widget]").each((k, thisEl) => {
-      
+
       // Grab the element and data
       let el = $(thisEl)
       let data = el.data()
-      
+
       // Only initialize once
       if(data.hasBeenInitialized) return
-      
+
       // Prepare options
       let options = {}
       for(let k in data) {
@@ -243,15 +243,15 @@ class Site extends EventEmitter {
           options[k] = data[k]
         }
       }
-      
+
       let widgets = this.getWidgetDefs(el)
       let widgetNames = []
       for(let i = 0; i < widgets.length; i++) {
-        
+
         let widget = widgets[i]
-        
+
         widgetNames.push(widget.name)
-        
+
         // Throw an error if that widget doesn't exist
         if(widget.name in $.fn === false) {
           if(data.widgetOptional === true) {
@@ -261,12 +261,12 @@ class Site extends EventEmitter {
             return
           }
         }
-        
+
         // Spawn the widget, and grab it's instance
         try {
           el[widget.name](options)
           let instance = el[widget.name]('instance')
-          
+
           // Save it to the components object
           if(widget.identifier) {
             this.components[widget.identifier] = instance
@@ -275,36 +275,36 @@ class Site extends EventEmitter {
           this.reportError(`Error initializing widget '${widget.name}'`, err)
           console.error(err)
         }
-        
+
       }
-      
+
       // Mark as initialized
       el.data('hasBeenInitialized', true)
       $.data(thisEl, 'widgetNames', widgetNames)
-      
+
     })
-    
+
     this.emit('afterWidgetsInit')
-    
+
   }
-  
+
   reportError (...args) {
     for (let arg of args)  {
       console.error(arg)
     }
   }
-  
+
   widget(name, def, explicitBase) {
     if(name.indexOf('.') === -1) {
       name = 'ui.'+name
     }
     $.widget(name, $.extend({}, baseWidget, explicitBase || {}, def))
   }
-  
+
 	preloadImages(srcs, timeout, callback) {
-		
+
 		var images = []
-    
+
 		var callbackCalled = false
 		var triggerCallback = () => {
 			if(!callbackCalled) {
@@ -312,12 +312,12 @@ class Site extends EventEmitter {
 				if(callback) callback()
 			}
 		}
-		
+
 		if(srcs.length === 0) {
 			triggerCallback()
 			return
 		}
-		
+
 		var loaded = (img) => {
 			images.push(img)
 			this.preloadedImages.push(img[0])
@@ -325,26 +325,26 @@ class Site extends EventEmitter {
 				triggerCallback()
 			}
 		}
-		
+
 		if(timeout !== false) {
 			setTimeout(() => {
 				triggerCallback()
 			}, timeout)
 		}
-    
+
     let preloadItem = (src) => {
       let img = $("<img>")
-			
+
 			let hasLoaded = false
-			
+
 			img.on("load", () => {
 				if(!hasLoaded) {
 					loaded(img)
 				}
 			})
-			
+
 			img[0].src = src
-			
+
 			if(img[0].width || img[0].naturalWidth) {
 				if(!hasLoaded) {
 					hasLoaded = true
@@ -352,29 +352,29 @@ class Site extends EventEmitter {
 				}
 			}
     }
-		
+
     srcs.map(preloadItem)
-    
+
 	}
-	
+
 	/*
 		Preloads images from the specified elements, with an optional timeout.
 		Callback will be triggered when their all elements have loaded, or when the timeout (in milliseconds) is reached.
 		Set timeout to false for no timeout.
-		
+
 		eg.
 			Site.preloadContent(els, 5000, callback)
 			Site.preloadContent(els, false, callback)
 	*/
 	preloadContent(els, timeout, callback) {
-		
+
 		var images = []
 		var callbackCalled = false
-		
+
 		$(els).each((k, el) => {
-			
+
 			var self = $(el)
-			
+
 			// Get images from 'style' attribute of div elements only
 			self.find("[style], .preload").each((k, el) => {
         let backgroundImage = $(el).css('backgroundImage')
@@ -386,18 +386,18 @@ class Site extends EventEmitter {
 					}
 				}
 			})
-			
+
 			// Get 'src' attributes from images
 			self.find("img").each((k, el) => {
 				images.push(el.src)
 			})
-			
+
 		})
-		
+
 		this.preloadImages(images, timeout, callback)
-		
+
 	}
-	
+
 	getURLPath(input) {
 		var match = input.match(/:\/\/[^\/]+([^#?]*)/)
 		if(match) {
@@ -406,11 +406,11 @@ class Site extends EventEmitter {
 			return ""
 		}
 	}
-	
+
 	resizeToFit(width, height, viewportWidth, viewportHeight, cover) {
-		
+
 		var result = {}
-		
+
 		if((cover && width/height > viewportWidth/viewportHeight) || (!cover && width/height < viewportWidth/viewportHeight)) {
 			result.width = viewportHeight * width/height
 			result.height = viewportHeight
@@ -418,29 +418,29 @@ class Site extends EventEmitter {
 			result.width = viewportWidth
 			result.height = viewportWidth * height/width
 		}
-		
+
 		result.top = viewportHeight/2 - result.height/2
 		result.left = viewportWidth/2 - result.width/2
-		
+
 		return result
-		
+
 	}
-	
+
 	forceResizeWindow() {
 		window.resizeTo(window.outerWidth, window.outerHeight)
 	}
-  
+
   preloadPages() {
 		if(this.isPreloadingPages) return
 		this.isPreloadingPages = true
-		
+
 		var loadNext = () => {
-			
+
 			// Filter out pre-preloaded urls
 			this.pagePreloadQueue = this.pagePreloadQueue.filter((url) => {
 				return this.preloadedPages[url] ? false : true
 			})
-			
+
 			if(this.pagePreloadQueue.length === 0) {
 				this.isPreloadingPages = false
 			} else {
@@ -450,28 +450,28 @@ class Site extends EventEmitter {
 				}, true)
 			}
 		}
-		
+
 		loadNext()
-		
+
 	}
-  
+
   getContent(url, callback, isPreload) {
-		
+
 		url = url.replace(/\#.+/, '')
-		
+
 		if(url.indexOf('?') == -1) {
 			url += "?xhr-page=true"
 		} else {
 			url += "&xhr-page=true"
 		}
-		
+
 		// Mark as preloaded (even if it's not). It won't appear in pageCache until it's been completely loaded. This is just to prevent the page from being preloaded more than once.
 		if(isPreload && this.preloadedPages[url]) {
 			callback()
 			return
 		}
 		this.preloadedPages[url] = true
-		
+
 		if(this.xhrOptions.cachePages && this.pageCache[url]) {
 			callback(this.pageCache[url])
 		} else {
@@ -490,16 +490,16 @@ class Site extends EventEmitter {
 				}
 			})
 		}
-		
+
 	}
-	
+
 	goToURL(url, dontPush) {
-		
+
 		var originalURL = url
 		var requestID = ++this.XHRRequestCounter
-		
+
 		this.lastURL = url
-		
+
 		// See if any widgets want to intercept this request instead
 		var allWidgets = this.getAllWidgets()
 		var urlPath = url.replace(/\#.+$/, '').match(/:\/\/[^\/]+(.*)/)
@@ -520,87 +520,87 @@ class Site extends EventEmitter {
 				}
 			}
 		}
-		
+
     if(this.xhrOptions.scrollAnimation) {
   		var htmlBody = $("html,body").stop(true).animate({scrollTop: 0}, this.xhrOptions.scrollAnimation).one('scroll', () => {
   			htmlBody.stop(true)
   		})
     }
-		
+
 		this.emit("xhrLoadStart")
-		
+
 		this.getContent(originalURL, (response, textStatus) => {
 			if(requestID !== this.XHRRequestCounter) {
 				// Looks like another request was made after this one, so ignore the response.
 				return
 			}
 			this.emit("xhrTransitioningOut")
-			
+
 			// Alter the response to keep the body tag
 			response = response.replace(/(<\/?)body/g, '$1bodyfake')
 			response = response.replace(/(<\/?)head/g, '$1headfake')
-			
+
 			// Convert the text response to DOM structure
 			var result = $("<div>"+response+"</div>")
-			
+
 			// Pull out the contents
 			var foundPageContainer = result.find(".xhr-page-contents, [data-page-container]").first()
-			
+
 			if(foundPageContainer.length === 0) {
 				// Could not find a page container element :/ just link to the page
 				window.location.href = originalURL
 				console.error("Could not find an element with a `data-page-container` attribute within the fetched XHR page response. Sending user directly to the page.")
 				return
 			}
-			
+
 			// Grab content
 			var newContent = $("<div class='xhr-page-contents'></div>").append(foundPageContainer.children())
-			
+
 			this.emit("xhrLoadMiddle")
-			
+
 			var finalize = () => {
 				this.emit("xhrLoadEnd")
-				
+
 				// Grab the page title
 				var title = result.find("title").html()
-				
+
 				// Grab any resources
 				var includes = result.find("headfake").find("script, link[rel=stylesheet]")
-				
+
 				// Grab the body class
 				var bodyClass = result.find("bodyfake").attr('class')
 				bodyClass = this.xhrOptions.filterBodyClasses(document.body.className, bodyClass)
-				
+
 				var oldPageState = this.pageState
 				this.pageState = result.find("pagestate").data('state')
-        
+
         // Look for gravity forms scripts in the footer
         // result.find("script").each((k, el) => {
         //   if(!el.getAttribute('src') && el.innerHTML.indexOf("var gf_global")) {
         //
         //   }
         // })
-				
+
 				// Set page title
 				$("head title").html(title)
         this.xhrOptions.swapBodyClasses(bodyClass + " xhr-transitioning-out")
-				
+
 				var existingScripts = $(document.head).find("script")
 				var existingStylesheets = $(document.head).find("link[rel=stylesheet]")
-				
+
 				// Swap menus out
 				const swapMenus = () => {
           result.find("ul.menu").each((k, item) => {
-            
+
             if(item.parentNode.parentNode.getAttribute('data-swap-classes')) {
               // Just swap classes for each li
               var id = item.getAttribute('id')
               if(!id) return
     					// var el = $('#'+id.replace(/\-[0-9]+/, ''))
               var el = $('#'+id)
-              
+
               var existingItems = el.find("li")
-              
+
               if(existingItems.length) {
                 $(item).find("li").each((k, li) => {
                   existingItems[k].className = li.className
@@ -615,23 +615,23 @@ class Site extends EventEmitter {
                 .html(item.innerHTML)
     					this.handleXHRLinks(el)
             }
-  					
+
   				})
         }
-				
+
 				// Swap WP 'Edit Post' link
 				var editButton = result.find("#wp-admin-bar-edit")
 				if(editButton.length) {
 					$("#wp-admin-bar-edit").html(editButton.html())
 				}
-				
+
 				// Apply any missing scripts
 				includes.each((i, el) => {
-          
+
 					if($(el).parents("[data-page-container]").length) return
-					
+
 					if(el.tagName == "SCRIPT") {
-						
+
 						var scriptSrc = el.src.replace(/\?.*$/, '')
 						var includeScript = true
 						existingScripts.each((k, el) => {
@@ -640,13 +640,13 @@ class Site extends EventEmitter {
 								includeScript = false
 							}
 						})
-						
+
 						if(includeScript) {
 							$(el).appendTo(document.head)
 						}
-						
+
 					} else if(el.tagName == "LINK") {
-						
+
 						var linkHref = el.href.replace(/\?.*$/, '')
 						var includeStyles = true
 						existingStylesheets.each((k, el) => {
@@ -655,34 +655,34 @@ class Site extends EventEmitter {
 								includeStyles = false
 							}
 						})
-						
+
 						if(includeStyles) {
 							$(el).appendTo(document.head)
 						}
-						
+
 					}
-					
+
 				})
-				
+
 				// Grab old content, by wrapping it in a span
         let oldContent = this.XHRPageContainer.children('.xhr-page-contents')
         if (oldContent.length === 0) {
   				this.XHRPageContainer.wrapInner("<span class='xhr-page-contents'></span>")
   				oldContent = this.XHRPageContainer.children().first()
         }
-				
+
 				// Add new content to the page
 				try {
 					this.XHRPageContainer.append(newContent)
 				} catch(e) {
-					
+
 				}
-				
+
 				newContent.hide()
-				
+
 				// Apply to history
 				if(!dontPush) {
-					
+
 					history.replaceState(Object.assign({}, history.state, this.generateReplaceState('apply to history')), null)
 					history.pushState(
 						{},
@@ -697,9 +697,9 @@ class Site extends EventEmitter {
             })
           }
 				}
-        
+
         this.emit('xhrWillTransition')
-				
+
 				// Destroy existing widgets
 				var steps = [
           (next) => {
@@ -719,7 +719,7 @@ class Site extends EventEmitter {
 						this.forceResizeWindow()
 						this.handleXHRLinks(newContent)
 						newContent.hide()
-						
+
 						// Perform the swap!
             this.emit('xhrWillSwapContent')
 						var delay = this.xhrOptions.widgetTransitionDelay
@@ -729,14 +729,14 @@ class Site extends EventEmitter {
 					(next) => {
 						this.emit('xhrWillTransitionWidgetsIn')
 						if(history.state && typeof history.state.scrollY === 'number' && !history.state.dontAutoScroll){
-							console.log('scrolling')
+							// console.log('scrolling')
 							this.emit('xhrWillScrollToPrevPosition')
 							$('html, body').animate({scrollTop: history.state.scrollY}, 0)
 						}
 						this.transitionWidgetsIn(newContent, this.pageState, oldPageState, next)
 					}
 				]
-				
+
 				var stepIndex = 0
 				var next = () => {
 					if(stepIndex < steps.length) {
@@ -745,21 +745,21 @@ class Site extends EventEmitter {
 						this.emit("xhrPageChanged")
 					}
 				}
-				
+
 				next()
-			
+
 			}
-			
+
 			if(this.xhrOptions.loadImages) {
 				this.preloadContent(newContent, this.xhrOptions.imageLoadTimeout, finalize)
 			} else {
 				finalize()
  			}
-			
+
 		})
-		
+
 	}
-  
+
   preloadWidgets (targetEl, callback) {
     const promises = this.getAllWidgets(targetEl)
       .filter(widget => widget._preloadWidget)
@@ -779,7 +779,7 @@ class Site extends EventEmitter {
       })
     Promise.all(promises).then(callback).catch(err => callback())
 	}
-	
+
 	generateReplaceState(s){
 		if ('scrollRestoration' in history && history.scrollRestoration !== 'manual') {
 				history.scrollRestoration = 'manual';
@@ -792,20 +792,20 @@ class Site extends EventEmitter {
 			|| window.pageXOffset
 			|| document.documentElement.scrollLeft,
 		}
-		console.log(s, t)
+		// console.log(s, t)
 		return t
 	}
-	
+
 	transitionWidgetsIn(targetEl, newState, oldState, callback) {
-		
+
 		var foundTransition = false
 		var finalDelay = 0
-		
+
 		targetEl.find("[data-widget]").each((index, el) => {
-			
+
 			el = $(el)
 			var widgets = this.getWidgetDefs(el)
-      
+
 			for(let k in widgets) {
 				if(widgets[k].instance && widgets[k].instance._transitionIn) {
           const widget = widgets[k].instance
@@ -820,9 +820,9 @@ class Site extends EventEmitter {
           }
 				}
 			}
-			
+
 		})
-		
+
 		if(foundTransition && finalDelay) {
 			setTimeout(callback, finalDelay)
 		} else if(foundTransition && !finalDelay) {
@@ -830,16 +830,16 @@ class Site extends EventEmitter {
 		} else {
 			callback()
 		}
-		
+
 	}
-	
+
 	transitionWidgetsOut (targetEl, newState, oldState, destroy, callback) {
-		
+
 		var foundTransition = false
 		var finalDelay = 0
-    
+
     let widgets = this.getAllWidgets(targetEl)
-    
+
     for(let widget of widgets) {
       foundTransition = true
       if(widget._transitionOut) {
@@ -850,7 +850,7 @@ class Site extends EventEmitter {
         }
       }
     }
-		
+
 		if(foundTransition && finalDelay) {
 			setTimeout(callback, finalDelay)
 		} else if(foundTransition && !finalDelay) {
@@ -858,25 +858,25 @@ class Site extends EventEmitter {
 		} else {
 			callback()
 		}
-		
+
 	}
-  
+
   wrapXHRInner () {
     const target = this.XHRPageContainer
     const wrapper = $("<span class='xhr-page-contents'></span>")
     wrapper.appendTo(target).append(target.children())
   }
-	
+
 	initXHRPageSystem() {
     if(!this.xhrOptions.xhrEnabled) return
-		
+
 		// Grab the page container, if one exists
 		this.XHRPageContainer = $("[data-page-container]:first")
 		if(this.XHRPageContainer.length === 0) {
 			this.XHRPageContainer = null
 			return
 		}
-		
+
 		// Add event listeners to jQuery which will add/remove the 'xhr-loading' class
 		$(document).ajaxStart(() => {
 			$(document.body).addClass("xhr-loading")
@@ -885,14 +885,14 @@ class Site extends EventEmitter {
 			$(document.body).removeClass("xhr-loading")
 			this.emit("xhrLoadingStop")
 		})
-		
+
 		// Add event listeners to links where appropriate
 		this.handleXHRLinks()
-    
+
     if(history.replaceState) {
       history.replaceState(window.history.state, window.title, window.location.href)
 		}
-		
+
 		// Handle browser back button
 		window.addEventListener("popstate", (e) => {
 			if(e.state) {
@@ -906,22 +906,22 @@ class Site extends EventEmitter {
         }
       }
 		})
-		
+
 	}
-	
+
 	handleXHRLinks(targetEl) {
-		
+
 		targetEl = $(targetEl || document.body)
-		
+
     const baseURL = window.location.origin
-		
+
 		targetEl.find("a").each((index, el) => {
 			var linkEl = $(el)
 			if(linkEl.data('prevent-xhr') || linkEl.data('xhr-event-added')) return
 			if(linkEl.attr('target')) return
-			
+
 			if(linkEl.parents("#wpadminbar").length || linkEl.parents("[data-prevent-xhr]").length) return
-			
+
 			// Ensure the URL is usable
 			var url = el.href
 			if(url.indexOf(baseURL) !== 0) {
@@ -940,14 +940,14 @@ class Site extends EventEmitter {
 				// link contains a hashbang
 				return
 			}
-			
+
       if (this.xhrOptions.cachePages) {
         if (!linkEl.data('no-preload') && linkEl.parents('[data-no-preload]').length === 0) {
     			this.pagePreloadQueue.push(el.href)
     			this.preloadPages()
         }
       }
-			
+
 			linkEl.click((e) => {
 				if(!e.metaKey && !e.ctrlKey) {
 					this.emit('xhrLinkClick', e, $(linkEl))
@@ -960,11 +960,11 @@ class Site extends EventEmitter {
           }
 				}
 			})
-			
+
 		})
-		
+
 	}
-  
+
   disableClickingFor (duration) {
     if (this.clickingDisabled) {
       duration = Math.max(this.clickingDisabled, duration)
@@ -975,14 +975,14 @@ class Site extends EventEmitter {
       this.clickingDisabled = false
     }, duration)
   }
-	
+
 	callAPI(method, args, callback) {
-		
+
 		if(args instanceof Function) {
 			callback = args
 			args = null
 		}
-		
+
 		$.ajax({
 			method: 'post',
 			url: "/json-api/"+method,
@@ -1009,8 +1009,8 @@ class Site extends EventEmitter {
 			}
 		})
   }
-  
-  
+
+
 }
 
 const XHRErrorCodes = {
@@ -1022,28 +1022,28 @@ const XHRErrorCodes = {
 
 const baseWidget = {
   debounce(callback, time, name) {
-    
+
     var self = this
-    
+
     name = name || '_'
-    
+
     self._scheduledTimers = self._scheduledTimers || {}
-    
+
     clearTimeout(this._scheduledTimers[name])
-    
+
     this._scheduledTimers[name] = setTimeout(() => {
       callback.call(this)
     }, time)
-    
+
   },
   throttle(callback, time, name, val) {
-    
+
     var self = this
     name = name || '_'
-    
+
     self._throttled = self._throttled || {}
     self._scheduledTimers = self._scheduledTimers || {}
-    
+
     if(self._throttled[name] === undefined) {
       clearTimeout(this._scheduledTimers[name])
       this._scheduledTimers[name] = setTimeout(() => {
@@ -1053,7 +1053,7 @@ const baseWidget = {
       self._throttled[name] = val
       callback()
     }
-    
+
   },
   afterInit(callback) {
     $(document).bind('afterWidgetsInit.'+this.uuid, () => {

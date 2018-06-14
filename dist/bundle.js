@@ -12117,1133 +12117,1228 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var jQuery = function () {
-	var oldjQuery = window.jQuery;
-	var old$ = window.$;
-	var jQuery = window.jQuery = window.$ = require("jquery.transit");
-	require("jquery-ui/ui/version");
-	require("jquery-ui/ui/keycode");
-	require("jquery-ui/ui/widget");
-	window.jQuery = oldjQuery;
-	window.$ = old$;
-	return jQuery;
+  var oldjQuery = window.jQuery;
+  var old$ = window.$;
+  var jQuery = window.jQuery = window.$ = require("jquery.transit");
+  require("jquery-ui/ui/version");
+  require("jquery-ui/ui/keycode");
+  require("jquery-ui/ui/widget");
+  window.jQuery = oldjQuery;
+  window.$ = old$;
+  return jQuery;
 }();
 var $ = jQuery;
 var EventEmitter = require('events').EventEmitter;
 
+function flatten(arr) {
+  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    args[_key - 1] = arguments[_key];
+  }
+
+  return [].concat(arr, args).reduce(function (res, obj) {
+    return clone(res, obj);
+  }, {});
+}
+
+function clone() {
+  for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+    args[_key2] = arguments[_key2];
+  }
+
+  return $.extend.apply($, [{}].concat(args));
+}
+
 var Site = function (_EventEmitter) {
-	_inherits(Site, _EventEmitter);
-
-	function Site() {
-		_classCallCheck(this, Site);
-
-		var _this = _possibleConstructorReturn(this, (Site.__proto__ || Object.getPrototypeOf(Site)).call(this));
-
-		console.log("Site by ED.\nhttps://ed.com.au");
-
-		_this.$ = jQuery;
-		_this.preloadedImages = [];
-
-		_this.pageCache = {};
-		_this.preloadedPages = {};
-
-		_this.pagePreloadQueue = [];
-		_this.isPreloadingPages = false;
-
-		_this.XHRRequestCounter = 0;
-
-		_this.xhrOptions = {
-			scrollAnimation: {
-				duration: 220
-			},
-			xhrEnabled: true,
-			loadImages: true,
-			imageLoadTimeout: 3000,
-			widgetTransitionDelay: 0,
-			cachePages: true,
-			swapBodyClasses: function swapBodyClasses(newClasses) {
-				setTimeout(function () {
-					document.body.className = newClasses;
-				}, (_this.xhrOptions.widgetTransitionDelay || 500) / 2);
-			},
-			swapContent: function swapContent(container, originalContent, newContent, direction) {
-
-				var duration = _this.xhrOptions.widgetTransitionDelay || 500;
-
-				// Fade out old content
-				originalContent.fadeOut({
-					duration: duration / 2,
-					complete: function complete() {
-
-						// Not forgetting to remove the old content
-						originalContent.remove();
-
-						// Fade in new content
-						newContent.css({
-							display: 'block',
-							opacity: 0
-						}).animate({
-							opacity: 1
-						}, {
-							duration: duration / 2
-						});
-					}
-				});
-
-				return duration + 500;
-			},
-			filterBodyClasses: function filterBodyClasses(oldClasses, newClasses) {
-				return newClasses;
-			}
-
-			// Init dev mode
-		};_this.initLiveReload();
-
-		_this.components = {};
-
-		// Wait for DOM load
-		jQuery(function () {
-			return _this.domReady();
-		});
-		return _this;
-	}
-
-	_createClass(Site, [{
-		key: "domReady",
-		value: function domReady() {
-			var _this2 = this;
-
-			if (this._domReadyCalled) return;
-			this._domReadyCalled = true;
-
-			this.pageState = $("pagestate").data('state');
-			this.initWidgets();
-			this.initXHRPageSystem();
-			this.preloadWidgets($(document.body), function () {
-				_this2.emit('loaded');
-			});
-			this.transitionWidgetsIn($(document.body), this.pageState, { initial: true }, function () {});
-			this.emit('ready');
-		}
-	}, {
-		key: "initLiveReload",
-		value: function initLiveReload() {
-
-			return;
-
-			if (navigator.appName != "Netscape" || !window.location.href.match(/(2016|ngrok)/)) {
-				return false;
-			}
-
-			var refresh = function refresh() {
-				return history.go(0);
-			};
-
-			var check = function check() {
-				$.ajax({
-					url: '/devcheck',
-					error: function error() {
-						// Failed, start checking again
-						setTimeout(check, 1000);
-					},
-					success: function success() {
-						// We got a response
-						refresh();
-					}
-				});
-			};
-
-			check();
-		}
-	}, {
-		key: "setGlobalState",
-		value: function setGlobalState(state, reset) {
-
-			for (var k in this.components) {
-				var component = this.components[k];
-				if (component && component.setState) {
-					if (k in state || reset !== false) {
-						component.setState(state[k] || {});
-					}
-				}
-			}
-		}
-	}, {
-		key: "findWidgets",
-		value: function findWidgets(name, el) {
-			var result = [];
-			var widgets = $('[data-widget]', el || document.body).each(function (k, el) {
-				var widgetNames = $.data(el, 'widgetNames');
-				if (widgetNames && widgetNames.indexOf(name) != -1) {
-					var instance = $(el)[name]('instance');
-					result.push(instance);
-				}
-			});
-			return result;
-		}
-	}, {
-		key: "findWidget",
-		value: function findWidget(name, el) {
-			var widgets = this.findWidgets(name, el);
-			if (widgets && widgets.length) {
-				return widgets[0];
-			} else {
-				return null;
-			}
-		}
-	}, {
-		key: "getAllWidgets",
-		value: function getAllWidgets(el) {
-			var result = [];
-			var widgets = $('[data-widget]', el || document.body);
-			if (el) widgets = widgets.add(el);
-			widgets.each(function (k, el) {
-				var widgetNames = $.data(el, 'widgetNames');
-				for (var _k in widgetNames) {
-					var instance = $(el)[widgetNames[_k]]('instance');
-					if (instance) {
-						result.push(instance);
-					}
-				}
-			});
-			return result;
-		}
-	}, {
-		key: "triggerAllWidgets",
-		value: function triggerAllWidgets(methodName) {
-			var target = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-
-
-			var widgets = this.getAllWidgets(target);
-
-			for (var _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-				args[_key - 2] = arguments[_key];
-			}
-
-			for (var k in widgets) {
-				var widget = widgets[k];
-				if (widget && methodName in widget) {
-					widget[methodName].apply(widget, args);
-				}
-			}
-		}
-	}, {
-		key: "getWidgetDefs",
-		value: function getWidgetDefs(el) {
-
-			el = $(el);
-
-			var widgets = (el.attr('data-widget') || el.attr('data-widgets')).split(/\,\s*/g);
-			var isInitialized = el.data('hasBeenInitialized');
-
-			for (var k in widgets) {
-
-				var widgetInfo = widgets[k].split('#');
-
-				widgets[k] = {
-					name: widgetInfo[0],
-					identifier: widgetInfo[1],
-					instance: isInitialized ? el[widgetInfo[0]]('instance') : null
-				};
-			}
-
-			return widgets;
-		}
-	}, {
-		key: "initWidgets",
-		value: function initWidgets(targetEl) {
-			var _this3 = this;
-
-			targetEl = $(targetEl || document.body);
-
-			// Look for uninitialized widgets
-			targetEl.find("[data-widget]").each(function (k, thisEl) {
-
-				// Grab the element and data
-				var el = $(thisEl);
-				var data = el.data();
-
-				// Only initialize once
-				if (data.hasBeenInitialized) return;
-
-				// Prepare options
-				var options = {};
-				for (var _k2 in data) {
-					if (_k2[0] !== "_") {
-						options[_k2] = data[_k2];
-					}
-				}
-
-				var widgets = _this3.getWidgetDefs(el);
-				var widgetNames = [];
-				for (var i = 0; i < widgets.length; i++) {
-
-					var widget = widgets[i];
-
-					widgetNames.push(widget.name);
-
-					// Throw an error if that widget doesn't exist
-					if (widget.name in $.fn === false) {
-						if (data.widgetOptional === true) {
-							return;
-						} else {
-							console.error("Could not initialize widget '" + widget.name + "', as no widget with this name has been declared.");
-							return;
-						}
-					}
-
-					// Spawn the widget, and grab it's instance
-					try {
-						el[widget.name](options);
-						var instance = el[widget.name]('instance');
-
-						// Save it to the components object
-						if (widget.identifier) {
-							_this3.components[widget.identifier] = instance;
-						}
-					} catch (err) {
-						_this3.reportError("Error initializing widget '" + widget.name + "'", err);
-						console.error(err);
-					}
-				}
-
-				// Mark as initialized
-				el.data('hasBeenInitialized', true);
-				$.data(thisEl, 'widgetNames', widgetNames);
-			});
-
-			this.emit('afterWidgetsInit');
-		}
-	}, {
-		key: "reportError",
-		value: function reportError() {
-			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-				args[_key2] = arguments[_key2];
-			}
-
-			var _iteratorNormalCompletion = true;
-			var _didIteratorError = false;
-			var _iteratorError = undefined;
-
-			try {
-				for (var _iterator = args[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-					var arg = _step.value;
-
-					console.error(arg);
-				}
-			} catch (err) {
-				_didIteratorError = true;
-				_iteratorError = err;
-			} finally {
-				try {
-					if (!_iteratorNormalCompletion && _iterator.return) {
-						_iterator.return();
-					}
-				} finally {
-					if (_didIteratorError) {
-						throw _iteratorError;
-					}
-				}
-			}
-		}
-	}, {
-		key: "widget",
-		value: function widget(name, def, explicitBase) {
-			if (name.indexOf('.') === -1) {
-				name = 'ui.' + name;
-			}
-			$.widget(name, $.extend({}, baseWidget, explicitBase || {}, def));
-		}
-	}, {
-		key: "preloadImages",
-		value: function preloadImages(srcs, timeout, callback) {
-			var _this4 = this;
-
-			var images = [];
-
-			var callbackCalled = false;
-			var triggerCallback = function triggerCallback() {
-				if (!callbackCalled) {
-					callbackCalled = true;
-					if (callback) callback();
-				}
-			};
-
-			if (srcs.length === 0) {
-				triggerCallback();
-				return;
-			}
-
-			var loaded = function loaded(img) {
-				images.push(img);
-				_this4.preloadedImages.push(img[0]);
-				if (images.length == srcs.length) {
-					triggerCallback();
-				}
-			};
-
-			if (timeout !== false) {
-				setTimeout(function () {
-					triggerCallback();
-				}, timeout);
-			}
-
-			var preloadItem = function preloadItem(src) {
-				var img = $("<img>");
-
-				var hasLoaded = false;
-
-				img.on("load", function () {
-					if (!hasLoaded) {
-						loaded(img);
-					}
-				});
-
-				img[0].src = src;
-
-				if (img[0].width || img[0].naturalWidth) {
-					if (!hasLoaded) {
-						hasLoaded = true;
-						loaded(img);
-					}
-				}
-			};
-
-			srcs.map(preloadItem);
-		}
-
-		/*
-  	Preloads images from the specified elements, with an optional timeout.
-  	Callback will be triggered when their all elements have loaded, or when the timeout (in milliseconds) is reached.
-  	Set timeout to false for no timeout.
-  	
-  	eg.
-  		Site.preloadContent(els, 5000, callback)
-  		Site.preloadContent(els, false, callback)
-  */
-
-	}, {
-		key: "preloadContent",
-		value: function preloadContent(els, timeout, callback) {
-
-			var images = [];
-			var callbackCalled = false;
-
-			$(els).each(function (k, el) {
-
-				var self = $(el);
-
-				// Get images from 'style' attribute of div elements only
-				self.find("[style], .preload").each(function (k, el) {
-					var backgroundImage = $(el).css('backgroundImage');
-					if (backgroundImage) {
-						var match = backgroundImage.match(/url\((.+)\)/);
-						if (match) {
-							var src = match[1].replace(/(^[\'\"]|[\'\"]$)/g, '');
-							images.push(src);
-						}
-					}
-				});
-
-				// Get 'src' attributes from images
-				self.find("img").each(function (k, el) {
-					images.push(el.src);
-				});
-			});
-
-			this.preloadImages(images, timeout, callback);
-		}
-	}, {
-		key: "getURLPath",
-		value: function getURLPath(input) {
-			var match = input.match(/:\/\/[^\/]+([^#?]*)/);
-			if (match) {
-				return match[1].replace(/\/$/, '');
-			} else {
-				return "";
-			}
-		}
-	}, {
-		key: "resizeToFit",
-		value: function resizeToFit(width, height, viewportWidth, viewportHeight, cover) {
-
-			var result = {};
-
-			if (cover && width / height > viewportWidth / viewportHeight || !cover && width / height < viewportWidth / viewportHeight) {
-				result.width = viewportHeight * width / height;
-				result.height = viewportHeight;
-			} else {
-				result.width = viewportWidth;
-				result.height = viewportWidth * height / width;
-			}
-
-			result.top = viewportHeight / 2 - result.height / 2;
-			result.left = viewportWidth / 2 - result.width / 2;
-
-			return result;
-		}
-	}, {
-		key: "forceResizeWindow",
-		value: function forceResizeWindow() {
-			window.resizeTo(window.outerWidth, window.outerHeight);
-		}
-	}, {
-		key: "preloadPages",
-		value: function preloadPages() {
-			var _this5 = this;
-
-			if (this.isPreloadingPages) return;
-			this.isPreloadingPages = true;
-
-			var loadNext = function loadNext() {
-
-				// Filter out pre-preloaded urls
-				_this5.pagePreloadQueue = _this5.pagePreloadQueue.filter(function (url) {
-					return _this5.preloadedPages[url] ? false : true;
-				});
-
-				if (_this5.pagePreloadQueue.length === 0) {
-					_this5.isPreloadingPages = false;
-				} else {
-					var url = _this5.pagePreloadQueue.shift();
-					_this5.getContent(url, function () {
-						setTimeout(loadNext);
-					}, true);
-				}
-			};
-
-			loadNext();
-		}
-	}, {
-		key: "getContent",
-		value: function getContent(url, callback, isPreload) {
-			var _this6 = this;
-
-			url = url.replace(/\#.+/, '');
-
-			if (url.indexOf('?') == -1) {
-				url += "?xhr-page=true";
-			} else {
-				url += "&xhr-page=true";
-			}
-
-			// Mark as preloaded (even if it's not). It won't appear in pageCache until it's been completely loaded. This is just to prevent the page from being preloaded more than once.
-			if (isPreload && this.preloadedPages[url]) {
-				callback();
-				return;
-			}
-			this.preloadedPages[url] = true;
-
-			if (this.xhrOptions.cachePages && this.pageCache[url]) {
-				callback(this.pageCache[url]);
-			} else {
-				$.ajax({
-					url: url,
-					async: true,
-					global: !isPreload,
-					success: function success(response, textStatus) {
-						callback(response, textStatus, null);
-						if (response && _this6.xhrOptions.cachePages) {
-							_this6.pageCache[url] = response;
-						}
-					},
-					error: function error(jqXHR, textStatus, _error) {
-						callback(jqXHR.responseText, textStatus, _error);
-					}
-				});
-			}
-		}
-	}, {
-		key: "goToURL",
-		value: function goToURL(url, dontPush) {
-			var _this7 = this;
-
-			var originalURL = url;
-			var requestID = ++this.XHRRequestCounter;
-
-			this.lastURL = url;
-
-			// See if any widgets want to intercept this request instead
-			var allWidgets = this.getAllWidgets();
-			var urlPath = url.replace(/\#.+$/, '').match(/:\/\/[^\/]+(.*)/);
-			for (var k in allWidgets) {
-				var widget = allWidgets[k];
-				if (widget && widget.xhrPageWillLoad) {
-					var result = widget.xhrPageWillLoad(urlPath, url);
-					if (result === false) {
-						history.pushState({}, null, originalURL);
-						if (window.ga) {
-							// Inform Google Analytics
-							ga('send', {
-								hitType: 'pageview',
-								page: location.pathname
-							});
-						}
-						return;
-					}
-				}
-			}
-
-			if (this.xhrOptions.scrollAnimation) {
-				var htmlBody = $("html,body").stop(true).animate({ scrollTop: 0 }, this.xhrOptions.scrollAnimation).one('scroll', function () {
-					htmlBody.stop(true);
-				});
-			}
-
-			this.emit("xhrLoadStart");
-
-			this.getContent(originalURL, function (response, textStatus) {
-				if (requestID !== _this7.XHRRequestCounter) {
-					// Looks like another request was made after this one, so ignore the response.
-					return;
-				}
-				_this7.emit("xhrTransitioningOut");
-
-				// Alter the response to keep the body tag
-				response = response.replace(/(<\/?)body/g, '$1bodyfake');
-				response = response.replace(/(<\/?)head/g, '$1headfake');
-
-				// Convert the text response to DOM structure
-				var result = $("<div>" + response + "</div>");
-
-				// Pull out the contents
-				var foundPageContainer = result.find(".xhr-page-contents, [data-page-container]").first();
-
-				if (foundPageContainer.length === 0) {
-					// Could not find a page container element :/ just link to the page
-					window.location.href = originalURL;
-					console.error("Could not find an element with a `data-page-container` attribute within the fetched XHR page response. Sending user directly to the page.");
-					return;
-				}
-
-				// Grab content
-				var newContent = $("<div class='xhr-page-contents'></div>").append(foundPageContainer.children());
-
-				_this7.emit("xhrLoadMiddle");
-
-				var finalize = function finalize() {
-					_this7.emit("xhrLoadEnd");
-
-					// Grab the page title
-					var title = result.find("title").html();
-
-					// Grab any resources
-					var includes = result.find("headfake").find("script, link[rel=stylesheet]");
-
-					// Grab the body class
-					var bodyClass = result.find("bodyfake").attr('class');
-					bodyClass = _this7.xhrOptions.filterBodyClasses(document.body.className, bodyClass);
-
-					var oldPageState = _this7.pageState;
-					_this7.pageState = result.find("pagestate").data('state');
-
-					// Look for gravity forms scripts in the footer
-					// result.find("script").each((k, el) => {
-					//   if(!el.getAttribute('src') && el.innerHTML.indexOf("var gf_global")) {
-					//
-					//   }
-					// })
-
-					// Set page title
-					$("head title").html(title);
-					_this7.xhrOptions.swapBodyClasses(bodyClass + " xhr-transitioning-out");
-
-					var existingScripts = $(document.head).find("script");
-					var existingStylesheets = $(document.head).find("link[rel=stylesheet]");
-
-					// Swap menus out
-					var swapMenus = function swapMenus() {
-						result.find("ul.menu").each(function (k, item) {
-
-							if (item.parentNode.parentNode.getAttribute('data-swap-classes')) {
-								// Just swap classes for each li
-								var id = item.getAttribute('id');
-								if (!id) return;
-								// var el = $('#'+id.replace(/\-[0-9]+/, ''))
-								var el = $('#' + id);
-
-								var existingItems = el.find("li");
-
-								if (existingItems.length) {
-									$(item).find("li").each(function (k, li) {
-										existingItems[k].className = li.className;
-									});
-								}
-							} else {
-								// Swap the entire contents (default behaviour)
-								var id = item.getAttribute('id');
-								if (!id) return;
-								// var el = $('#'+id.replace(/\-[0-9]+/, ''))
-								var el = $('#' + id).html(item.innerHTML);
-								_this7.handleXHRLinks(el);
-							}
-						});
-					};
-
-					// Swap WP 'Edit Post' link
-					var editButton = result.find("#wp-admin-bar-edit");
-					if (editButton.length) {
-						$("#wp-admin-bar-edit").html(editButton.html());
-					}
-
-					// Apply any missing scripts
-					includes.each(function (i, el) {
-
-						if ($(el).parents("[data-page-container]").length) return;
-
-						if (el.tagName == "SCRIPT") {
-
-							var scriptSrc = el.src.replace(/\?.*$/, '');
-							var includeScript = true;
-							existingScripts.each(function (k, el) {
-								var elSrc = el.src.replace(/\?.*$/, '');
-								if (scriptSrc == elSrc) {
-									includeScript = false;
-								}
-							});
-
-							if (includeScript) {
-								$(el).appendTo(document.head);
-							}
-						} else if (el.tagName == "LINK") {
-
-							var linkHref = el.href.replace(/\?.*$/, '');
-							var includeStyles = true;
-							existingStylesheets.each(function (k, el) {
-								var elHref = el.href.replace(/\?.*$/, '');
-								if (linkHref == elHref) {
-									includeStyles = false;
-								}
-							});
-
-							if (includeStyles) {
-								$(el).appendTo(document.head);
-							}
-						}
-					});
-
-					// Grab old content, by wrapping it in a span
-					var oldContent = _this7.XHRPageContainer.children('.xhr-page-contents');
-					if (oldContent.length === 0) {
-						_this7.XHRPageContainer.wrapInner("<span class='xhr-page-contents'></span>");
-						oldContent = _this7.XHRPageContainer.children().first();
-					}
-
-					// Add new content to the page
-					try {
-						_this7.XHRPageContainer.append(newContent);
-					} catch (e) {}
-
-					newContent.hide();
-
-					// Apply to history
-					if (!dontPush) {
-
-						history.replaceState(Object.assign({}, history.state, _this7.generateReplaceState('apply to history')), null);
-						history.pushState({}, title, originalURL);
-						if (window.ga) {
-							// Inform Google Analytics
-							ga('send', {
-								hitType: 'pageview',
-								page: location.pathname
-							});
-						}
-					}
-
-					_this7.emit('xhrWillTransition');
-
-					// Destroy existing widgets
-					var steps = [function (next) {
-						_this7.initWidgets(newContent);
-						Promise.race([new Promise(function (resolve) {
-							return _this7.preloadWidgets(newContent, resolve);
-						}), new Promise(function (resolve) {
-							return setTimeout(resolve, 6000);
-						})]).then(next);
-					}, function (next) {
-						_this7.transitionWidgetsOut(oldContent, oldPageState, _this7.pageState, true, next);
-					}, function (next) {
-						// Set up links and widgets
-						swapMenus();
-						newContent.show();
-						_this7.forceResizeWindow();
-						_this7.handleXHRLinks(newContent);
-						newContent.hide();
-
-						// Perform the swap!
-						_this7.emit('xhrWillSwapContent');
-						var delay = _this7.xhrOptions.widgetTransitionDelay;
-						delay = _this7.xhrOptions.swapContent(_this7.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward") || delay;
-						setTimeout(next, delay);
-					}, function (next) {
-						_this7.emit('xhrWillTransitionWidgetsIn');
-						if (history.state && typeof history.state.scrollY === 'number' && !history.state.dontAutoScroll) {
-							console.log('scrolling');
-							_this7.emit('xhrWillScrollToPrevPosition');
-							$('html, body').animate({ scrollTop: history.state.scrollY }, 0);
-						}
-						_this7.transitionWidgetsIn(newContent, _this7.pageState, oldPageState, next);
-					}];
-
-					var stepIndex = 0;
-					var next = function next() {
-						if (stepIndex < steps.length) {
-							steps[stepIndex++](next);
-						} else {
-							_this7.emit("xhrPageChanged");
-						}
-					};
-
-					next();
-				};
-
-				if (_this7.xhrOptions.loadImages) {
-					_this7.preloadContent(newContent, _this7.xhrOptions.imageLoadTimeout, finalize);
-				} else {
-					finalize();
-				}
-			});
-		}
-	}, {
-		key: "preloadWidgets",
-		value: function preloadWidgets(targetEl, callback) {
-			var promises = this.getAllWidgets(targetEl).filter(function (widget) {
-				return widget._preloadWidget;
-			}).map(function (widget) {
-				// Create a 'promise to load'
-				widget.__promiseToLoad = new Promise(function (resolve) {
-					try {
-						widget._preloadWidget(function () {
-							resolve();
-						});
-					} catch (err) {
-						resolve();
-						console.error(err);
-					}
-				});
-				return widget.__promiseToLoad;
-			});
-			Promise.all(promises).then(callback).catch(function (err) {
-				return callback();
-			});
-		}
-	}, {
-		key: "generateReplaceState",
-		value: function generateReplaceState(s) {
-			if ('scrollRestoration' in history && history.scrollRestoration !== 'manual') {
-				history.scrollRestoration = 'manual';
-			}
-			var t = {
-				scrollY: window.scrollY || window.pageYOffset || document.documentElement.scrollTop,
-				scrollX: window.scrollX || window.pageXOffset || document.documentElement.scrollLeft
-			};
-			console.log(s, t);
-			return t;
-		}
-	}, {
-		key: "transitionWidgetsIn",
-		value: function transitionWidgetsIn(targetEl, newState, oldState, callback) {
-			var _this8 = this;
-
-			var foundTransition = false;
-			var finalDelay = 0;
-
-			targetEl.find("[data-widget]").each(function (index, el) {
-
-				el = $(el);
-				var widgets = _this8.getWidgetDefs(el);
-
-				for (var k in widgets) {
-					if (widgets[k].instance && widgets[k].instance._transitionIn) {
-						var delay;
-
-						(function () {
-							var widget = widgets[k].instance;
-							if (widget.__promiseToLoad) {
-								widget.__promiseToLoad.then(function () {
-									widget._transitionIn(newState, oldState, _this8.xhrOptions.widgetTransitionDelay);
-								});
-							} else {
-								delay = widget._transitionIn(newState, oldState, _this8.xhrOptions.widgetTransitionDelay);
-
-								foundTransition = true;
-								finalDelay = Math.max(delay, finalDelay);
-							}
-						})();
-					}
-				}
-			});
-
-			if (foundTransition && finalDelay) {
-				setTimeout(callback, finalDelay);
-			} else if (foundTransition && !finalDelay) {
-				setTimeout(callback, this.xhrOptions.widgetTransitionDelay);
-			} else {
-				callback();
-			}
-		}
-	}, {
-		key: "transitionWidgetsOut",
-		value: function transitionWidgetsOut(targetEl, newState, oldState, destroy, callback) {
-
-			var foundTransition = false;
-			var finalDelay = 0;
-
-			var widgets = this.getAllWidgets(targetEl);
-
-			var _iteratorNormalCompletion2 = true;
-			var _didIteratorError2 = false;
-			var _iteratorError2 = undefined;
-
-			try {
-				for (var _iterator2 = widgets[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-					var widget = _step2.value;
-
-					foundTransition = true;
-					if (widget._transitionOut) {
-						var delay = widget._transitionOut(newState, oldState, this.xhrOptions.widgetTransitionDelay);
-						finalDelay = Math.max(delay, finalDelay);
-						if (destroy) {
-							widget.destroy();
-						}
-					}
-				}
-			} catch (err) {
-				_didIteratorError2 = true;
-				_iteratorError2 = err;
-			} finally {
-				try {
-					if (!_iteratorNormalCompletion2 && _iterator2.return) {
-						_iterator2.return();
-					}
-				} finally {
-					if (_didIteratorError2) {
-						throw _iteratorError2;
-					}
-				}
-			}
-
-			if (foundTransition && finalDelay) {
-				setTimeout(callback, finalDelay);
-			} else if (foundTransition && !finalDelay) {
-				setTimeout(callback, this.xhrOptions.widgetTransitionDelay);
-			} else {
-				callback();
-			}
-		}
-	}, {
-		key: "wrapXHRInner",
-		value: function wrapXHRInner() {
-			var target = this.XHRPageContainer;
-			var wrapper = $("<span class='xhr-page-contents'></span>");
-			wrapper.appendTo(target).append(target.children());
-		}
-	}, {
-		key: "initXHRPageSystem",
-		value: function initXHRPageSystem() {
-			var _this9 = this;
-
-			if (!this.xhrOptions.xhrEnabled) return;
-
-			// Grab the page container, if one exists
-			this.XHRPageContainer = $("[data-page-container]:first");
-			if (this.XHRPageContainer.length === 0) {
-				this.XHRPageContainer = null;
-				return;
-			}
-
-			// Add event listeners to jQuery which will add/remove the 'xhr-loading' class
-			$(document).ajaxStart(function () {
-				$(document.body).addClass("xhr-loading");
-				_this9.emit("xhrLoadingStart");
-			}).ajaxStop(function () {
-				$(document.body).removeClass("xhr-loading");
-				_this9.emit("xhrLoadingStop");
-			});
-
-			// Add event listeners to links where appropriate
-			this.handleXHRLinks();
-
-			if (history.replaceState) {
-				history.replaceState(window.history.state, window.title, window.location.href);
-			}
-
-			// Handle browser back button
-			window.addEventListener("popstate", function (e) {
-				if (e.state) {
-					var wasDefaultPrevented = false;
-					e.preventDefault = function () {
-						wasDefaultPrevented = true;
-					};
-					_this9.emit('xhrPopState', e);
-					if (!wasDefaultPrevented) {
-						_this9.goToURL(window.location.href, true);
-					}
-				}
-			});
-		}
-	}, {
-		key: "handleXHRLinks",
-		value: function handleXHRLinks(targetEl) {
-			var _this10 = this;
-
-			targetEl = $(targetEl || document.body);
-
-			var baseURL = window.location.origin;
-
-			targetEl.find("a").each(function (index, el) {
-				var linkEl = $(el);
-				if (linkEl.data('prevent-xhr') || linkEl.data('xhr-event-added')) return;
-				if (linkEl.attr('target')) return;
-
-				if (linkEl.parents("#wpadminbar").length || linkEl.parents("[data-prevent-xhr]").length) return;
-
-				// Ensure the URL is usable
-				var url = el.href;
-				if (url.indexOf(baseURL) !== 0) {
-					// Link is not on this site
-					return;
-				}
-				if (url.match(/(wp-admin|wp-login)/g)) {
-					// A bit too wordpressy
-					return;
-				}
-				if (url.match(/\.[a-z]$/i) || url.match(/(mailto|tel):/i)) {
-					// Link is a file
-					return;
-				}
-				if (url.match(/\#/)) {
-					// link contains a hashbang
-					return;
-				}
-
-				if (_this10.xhrOptions.cachePages) {
-					if (!linkEl.data('no-preload') && linkEl.parents('[data-no-preload]').length === 0) {
-						_this10.pagePreloadQueue.push(el.href);
-						_this10.preloadPages();
-					}
-				}
-
-				linkEl.click(function (e) {
-					if (!e.metaKey && !e.ctrlKey) {
-						_this10.emit('xhrLinkClick', e, $(linkEl));
-						// A dev can use e.preventDefault() to also prevent any XHR transitions!
-						if (!e.isDefaultPrevented()) {
-							e.preventDefault();
-							if (!_this10.clickingDisabled) {
-								_this10.goToURL(el.href);
-							}
-						}
-					}
-				});
-			});
-		}
-	}, {
-		key: "disableClickingFor",
-		value: function disableClickingFor(duration) {
-			var _this11 = this;
-
-			if (this.clickingDisabled) {
-				duration = Math.max(this.clickingDisabled, duration);
-			}
-			this.clickingDisabled = duration;
-			clearTimeout(this.disabledClickTimer);
-			this.disabledClickTimer = setTimeout(function () {
-				_this11.clickingDisabled = false;
-			}, duration);
-		}
-	}, {
-		key: "callAPI",
-		value: function callAPI(method, args, callback) {
-
-			if (args instanceof Function) {
-				callback = args;
-				args = null;
-			}
-
-			$.ajax({
-				method: 'post',
-				url: "/json-api/" + method,
-				data: JSON.stringify(args),
-				dataType: "json",
-				success: function success(response) {
-					callback(response.error, response.result);
-				},
-				error: function error(jqXHR, textStatus, errorThrown) {
-					var message = "";
-					if (textStatus && XHRErrorCodes[textStatus]) {
-						message = XHRErrorCodes[textStatus];
-					} else {
-						message = "Server error occurred while making API request";
-					}
-					if (errorThrown && message) {
-						message += ": " + errorThrown;
-					}
-					callback({
-						code: textStatus || errorThrown,
-						message: message,
-						info: null
-					}, null);
-				}
-			});
-		}
-	}]);
-
-	return Site;
+  _inherits(Site, _EventEmitter);
+
+  function Site() {
+    _classCallCheck(this, Site);
+
+    var _this = _possibleConstructorReturn(this, (Site.__proto__ || Object.getPrototypeOf(Site)).call(this));
+
+    var size = 40;
+    var style = "\n\t\t\tfont-size: 1px;\n\t\t\tline-height:" + size * .5 + "px;padding:" + size * .25 + "px " + size * .5 + "px;\n\t\t\tbackground-size: " + size + "px " + size * .75 + "px;\n\t\t\tbackground-image: url(\"data:image/svg+xml;charset=UTF-8,%3csvg class='header-logo' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' viewBox='0 0 84 45' enable-background='new 0 0 84 45' xml:space='preserve'%3e%3cstyle%3e %23ED_Logo%7btransition: transform 0.3s;%7d %23ED_Logo:hover%7btransform: scale(1.1);%7d %3c/style%3e%3cg id='ED_Logo'%3e%3cg%3e%3cpath d='M11.4,34.4h19.2V45H0V0h30.6v10.6H11.4v6.6h18.8v10.7H11.4V34.4z'%3e%3c/path%3e%3cpath d='M51.1,0c15.3,0,23,11.3,23,22.6c0,11.2-7.7,22.4-23,22.4H33.6V0H51.1z M51.1,34.5c7.8,0,11.8-6,11.8-12 c0-5.9-4-12.2-11.8-12.2h-6.2v24.1C44.9,34.5,48.2,34.5,51.1,34.5z'%3e%3c/path%3e%3cpath d='M84,39.3c0,2.8-2.6,5.7-6.2,5.7c-3.3,0-6-2.9-6-5.7c0-3.4,2.7-5.7,6-5.7C81.4,33.6,84,35.9,84,39.3z'%3e%3c/path%3e%3c/g%3e%3c/g%3e%3c/svg%3e\");\n\t\t\tbackground-repeat:no-repeat;\n\t\t\tbackground-position:center;\n\t\t";
+    console.log('%c\n', style, '\nSite by ED.\nhttps://ed.com.au');
+
+    _this.$ = jQuery;
+    _this.preloadedImages = [];
+
+    _this.pageCache = {};
+    _this.preloadedPages = {};
+
+    _this.pagePreloadQueue = [];
+    _this.isPreloadingPages = false;
+
+    _this.XHRRequestCounter = 0;
+
+    _this.xhrOptions = {
+      scrollAnimation: {
+        duration: 220
+      },
+      xhrEnabled: true,
+      loadImages: true,
+      imageLoadTimeout: 3000,
+      widgetTransitionDelay: 0,
+      cachePages: true,
+      swapBodyClasses: function swapBodyClasses(newClasses) {
+        setTimeout(function () {
+          document.body.className = newClasses;
+        }, (_this.xhrOptions.widgetTransitionDelay || 500) / 2);
+      },
+      swapContent: function swapContent(container, originalContent, newContent, direction) {
+
+        var duration = _this.xhrOptions.widgetTransitionDelay || 500;
+
+        // Fade out old content
+        originalContent.fadeOut({
+          duration: duration / 2,
+          complete: function complete() {
+
+            // Not forgetting to remove the old content
+            originalContent.remove();
+
+            // Fade in new content
+            newContent.css({
+              display: 'block',
+              opacity: 0
+            }).animate({
+              opacity: 1
+            }, {
+              duration: duration / 2
+            });
+          }
+        });
+
+        return duration + 500;
+      },
+      filterBodyClasses: function filterBodyClasses(oldClasses, newClasses) {
+        return newClasses;
+      }
+
+      // Init dev mode
+    };_this.initLiveReload();
+
+    _this.components = {};
+
+    // Wait for DOM load
+    jQuery(function () {
+      return _this.domReady();
+    });
+    return _this;
+  }
+
+  _createClass(Site, [{
+    key: "domReady",
+    value: function domReady() {
+      var _this2 = this;
+
+      if (this._domReadyCalled) return;
+      this._domReadyCalled = true;
+
+      this.pageState = $("pagestate").data('state');
+      this.initWidgets();
+      this.initXHRPageSystem();
+      this.preloadWidgets($(document.body), function () {
+        _this2.emit('loaded');
+      });
+      this.transitionWidgetsIn($(document.body), this.pageState, { initial: true }, function () {});
+      this.emit('ready');
+    }
+  }, {
+    key: "initLiveReload",
+    value: function initLiveReload() {
+
+      return;
+
+      if (navigator.appName != "Netscape" || !window.location.href.match(/(2016|ngrok)/)) {
+        return false;
+      }
+
+      var refresh = function refresh() {
+        return history.go(0);
+      };
+
+      var check = function check() {
+        $.ajax({
+          url: '/devcheck',
+          error: function error() {
+            // Failed, start checking again
+            setTimeout(check, 1000);
+          },
+          success: function success() {
+            // We got a response
+            refresh();
+          }
+        });
+      };
+
+      check();
+    }
+  }, {
+    key: "setGlobalState",
+    value: function setGlobalState(state, reset) {
+
+      for (var k in this.components) {
+        var component = this.components[k];
+        if (component && component.setState) {
+          if (k in state || reset !== false) {
+            component.setState(state[k] || {});
+          }
+        }
+      }
+    }
+  }, {
+    key: "findWidgets",
+    value: function findWidgets(name, el) {
+      var result = [];
+      var widgets = $('[data-widget]', el || document.body).each(function (k, el) {
+        var widgetNames = $.data(el, 'widgetNames');
+        if (widgetNames && widgetNames.indexOf(name) != -1) {
+          var instance = $(el)[name]('instance');
+          result.push(instance);
+        }
+      });
+      return result;
+    }
+  }, {
+    key: "findWidget",
+    value: function findWidget(name, el) {
+      var widgets = this.findWidgets(name, el);
+      if (widgets && widgets.length) {
+        return widgets[0];
+      } else {
+        return null;
+      }
+    }
+  }, {
+    key: "getAllWidgets",
+    value: function getAllWidgets(el) {
+      var result = [];
+      var widgets = $('[data-widget]', el || document.body);
+      if (el) widgets = widgets.add(el);
+      widgets.each(function (k, el) {
+        var widgetNames = $.data(el, 'widgetNames');
+        for (var _k in widgetNames) {
+          var instance = $(el)[widgetNames[_k]]('instance');
+          if (instance) {
+            result.push(instance);
+          }
+        }
+      });
+      return result;
+    }
+  }, {
+    key: "triggerAllWidgets",
+    value: function triggerAllWidgets(methodName) {
+      var target = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+
+      var widgets = this.getAllWidgets(target);
+
+      for (var _len3 = arguments.length, args = Array(_len3 > 2 ? _len3 - 2 : 0), _key3 = 2; _key3 < _len3; _key3++) {
+        args[_key3 - 2] = arguments[_key3];
+      }
+
+      for (var k in widgets) {
+        var widget = widgets[k];
+        if (widget && methodName in widget) {
+          widget[methodName].apply(widget, args);
+        }
+      }
+    }
+  }, {
+    key: "getWidgetDefs",
+    value: function getWidgetDefs(el) {
+
+      el = $(el);
+
+      var widgets = (el.attr('data-widget') || el.attr('data-widgets')).split(/\,\s*/g);
+      var isInitialized = el.data('hasBeenInitialized');
+
+      for (var k in widgets) {
+
+        var widgetInfo = widgets[k].split('#');
+
+        widgets[k] = {
+          name: widgetInfo[0],
+          identifier: widgetInfo[1],
+          instance: isInitialized ? el[widgetInfo[0]]('instance') : null
+        };
+      }
+
+      return widgets;
+    }
+  }, {
+    key: "initWidgets",
+    value: function initWidgets(targetEl) {
+      var _this3 = this;
+
+      targetEl = $(targetEl || document.body);
+
+      // Look for uninitialized widgets
+      targetEl.find("[data-widget]").each(function (k, thisEl) {
+
+        // Grab the element and data
+        var el = $(thisEl);
+        var data = el.data();
+
+        // Only initialize once
+        if (data.hasBeenInitialized) return;
+
+        // Prepare options
+        var options = {};
+        for (var _k2 in data) {
+          if (_k2[0] !== "_") {
+            options[_k2] = data[_k2];
+          }
+        }
+
+        var widgets = _this3.getWidgetDefs(el);
+        var widgetNames = [];
+        for (var i = 0; i < widgets.length; i++) {
+
+          var widget = widgets[i];
+
+          widgetNames.push(widget.name);
+
+          // Throw an error if that widget doesn't exist
+          if (widget.name in $.fn === false) {
+            if (data.widgetOptional === true) {
+              return;
+            } else {
+              console.error("Could not initialize widget '" + widget.name + "', as no widget with this name has been declared.");
+              return;
+            }
+          }
+
+          // Spawn the widget, and grab it's instance
+          try {
+            el[widget.name](options);
+            var instance = el[widget.name]('instance');
+
+            // Save it to the components object
+            if (widget.identifier) {
+              _this3.components[widget.identifier] = instance;
+            }
+          } catch (err) {
+            _this3.reportError("Error initializing widget '" + widget.name + "'", err);
+            console.error(err);
+          }
+        }
+
+        // Mark as initialized
+        el.data('hasBeenInitialized', true);
+        $.data(thisEl, 'widgetNames', widgetNames);
+      });
+
+      this.emit('afterWidgetsInit');
+    }
+  }, {
+    key: "reportError",
+    value: function reportError() {
+      for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+        args[_key4] = arguments[_key4];
+      }
+
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = args[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var arg = _step.value;
+
+          console.error(arg);
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+    }
+  }, {
+    key: "propsToSave",
+    value: function propsToSave() {
+      return ['_create', '_destroy', '_transitionIn', '_transitionOut'];
+    }
+  }, {
+    key: "saveWidgetProps",
+    value: function saveWidgetProps(self, mixins, name) {
+      return this.propsToSave().reduce(function (result, key) {
+        // Replaces the protected prop with a function that sequentially calls
+        // the protected prop on all extensions
+        result[key] = function () {
+          var _this4 = this;
+
+          for (var _len5 = arguments.length, args = Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+            args[_key5] = arguments[_key5];
+          }
+
+          if (typeof self[key] === 'function') self[key].apply(this, args);
+
+          mixins.filter(function (x) {
+            return typeof x[key] === 'function';
+          }).forEach(function (mixin) {
+            mixin[key].apply(_this4, args);
+          });
+        };
+        return result;
+      }, {});
+    }
+  }, {
+    key: "prepWidgetExtensions",
+    value: function prepWidgetExtensions(name, def) {
+      var _this5 = this;
+
+      var mixins = def.use;
+      var meta = [];
+      var mixeds = mixins.map(function (mixin) {
+        meta.push({ name: mixin.name });
+        return mixin(_this5, _this5.$, name, clone(def));
+      });
+
+      // Warn of overwritten props
+      mixeds.forEach(function (mix, curr) {
+        Object.keys(mix).filter(function (k) {
+          return !_this5.propsToSave().includes(k);
+        }).forEach(function (k) {
+          if (def[k]) {
+            console.warn("The prop " + k + " will be overwritten by extension " + (mixins[curr].name || curr));
+          }
+          // only check mixins below this current one
+          mixeds.map(function (mixed, i) {
+            return { mix: mixed, name: meta[i].name };
+          }).filter(function (_, i) {
+            return i < curr;
+          }).forEach(function (mixed, i) {
+            if (mixed.mix[k]) {
+              console.warn("The prop " + k + " from extension " + (mixed.name || i) + " will be overwritten by extension " + (mixins[curr].name || curr));
+            }
+          });
+        });
+      });
+
+      var saved = saveWidgetProps(def, mixeds, name);
+
+      return clone(def, flatten(mixeds, saved));
+    }
+  }, {
+    key: "widget",
+    value: function widget(name, def, explicitBase) {
+      var finalDef = def;
+      // widget.use is an array we will treat it as an array of extensions
+      if (def.use) {
+        if (Array.isArray(def.use)) {
+          finalDef = this.prepWidgetExtensions(name, def);
+        } else {
+          console.warn("The " + name + " widget has property 'use' but it is not an array.");
+        }
+      }
+      if (name.indexOf('.') === -1) {
+        name = 'ui.' + name;
+      }
+      $.widget(name, $.extend({}, baseWidget, explicitBase || {}, finalDef));
+    }
+  }, {
+    key: "preloadImages",
+    value: function preloadImages(srcs, timeout, callback) {
+      var _this6 = this;
+
+      var images = [];
+
+      var callbackCalled = false;
+      var triggerCallback = function triggerCallback() {
+        if (!callbackCalled) {
+          callbackCalled = true;
+          if (callback) callback();
+        }
+      };
+
+      if (srcs.length === 0) {
+        triggerCallback();
+        return;
+      }
+
+      var loaded = function loaded(img) {
+        images.push(img);
+        _this6.preloadedImages.push(img[0]);
+        if (images.length == srcs.length) {
+          triggerCallback();
+        }
+      };
+
+      if (timeout !== false) {
+        setTimeout(function () {
+          triggerCallback();
+        }, timeout);
+      }
+
+      var preloadItem = function preloadItem(src) {
+        var img = $("<img>");
+
+        var hasLoaded = false;
+
+        img.on("load", function () {
+          if (!hasLoaded) {
+            loaded(img);
+          }
+        });
+
+        img[0].src = src;
+
+        if (img[0].width || img[0].naturalWidth) {
+          if (!hasLoaded) {
+            hasLoaded = true;
+            loaded(img);
+          }
+        }
+      };
+
+      srcs.map(preloadItem);
+    }
+
+    /*
+    	Preloads images from the specified elements, with an optional timeout.
+    	Callback will be triggered when their all elements have loaded, or when the timeout (in milliseconds) is reached.
+    	Set timeout to false for no timeout.
+    	
+    	eg.
+    		Site.preloadContent(els, 5000, callback)
+    		Site.preloadContent(els, false, callback)
+    */
+
+  }, {
+    key: "preloadContent",
+    value: function preloadContent(els, timeout, callback) {
+
+      var images = [];
+      var callbackCalled = false;
+
+      $(els).each(function (k, el) {
+
+        var self = $(el);
+
+        // Get images from 'style' attribute of div elements only
+        self.find("[style], .preload").each(function (k, el) {
+          var backgroundImage = $(el).css('backgroundImage');
+          if (backgroundImage) {
+            var match = backgroundImage.match(/url\((.+)\)/);
+            if (match) {
+              var src = match[1].replace(/(^[\'\"]|[\'\"]$)/g, '');
+              images.push(src);
+            }
+          }
+        });
+
+        // Get 'src' attributes from images
+        self.find("img").each(function (k, el) {
+          images.push(el.src);
+        });
+      });
+
+      this.preloadImages(images, timeout, callback);
+    }
+  }, {
+    key: "getURLPath",
+    value: function getURLPath(input) {
+      var match = input.match(/:\/\/[^\/]+([^#?]*)/);
+      if (match) {
+        return match[1].replace(/\/$/, '');
+      } else {
+        return "";
+      }
+    }
+  }, {
+    key: "resizeToFit",
+    value: function resizeToFit(width, height, viewportWidth, viewportHeight, cover) {
+
+      var result = {};
+
+      if (cover && width / height > viewportWidth / viewportHeight || !cover && width / height < viewportWidth / viewportHeight) {
+        result.width = viewportHeight * width / height;
+        result.height = viewportHeight;
+      } else {
+        result.width = viewportWidth;
+        result.height = viewportWidth * height / width;
+      }
+
+      result.top = viewportHeight / 2 - result.height / 2;
+      result.left = viewportWidth / 2 - result.width / 2;
+
+      return result;
+    }
+  }, {
+    key: "forceResizeWindow",
+    value: function forceResizeWindow() {
+      window.resizeTo(window.outerWidth, window.outerHeight);
+    }
+  }, {
+    key: "preloadPages",
+    value: function preloadPages() {
+      var _this7 = this;
+
+      if (this.isPreloadingPages) return;
+      this.isPreloadingPages = true;
+
+      var loadNext = function loadNext() {
+
+        // Filter out pre-preloaded urls
+        _this7.pagePreloadQueue = _this7.pagePreloadQueue.filter(function (url) {
+          return _this7.preloadedPages[url] ? false : true;
+        });
+
+        if (_this7.pagePreloadQueue.length === 0) {
+          _this7.isPreloadingPages = false;
+        } else {
+          var url = _this7.pagePreloadQueue.shift();
+          _this7.getContent(url, function () {
+            setTimeout(loadNext);
+          }, true);
+        }
+      };
+
+      loadNext();
+    }
+  }, {
+    key: "getContent",
+    value: function getContent(url, callback, isPreload) {
+      var _this8 = this;
+
+      url = url.replace(/\#.+/, '');
+
+      if (url.indexOf('?') == -1) {
+        url += "?xhr-page=true";
+      } else {
+        url += "&xhr-page=true";
+      }
+
+      // Mark as preloaded (even if it's not). It won't appear in pageCache until it's been completely loaded. This is just to prevent the page from being preloaded more than once.
+      if (isPreload && this.preloadedPages[url]) {
+        callback();
+        return;
+      }
+      this.preloadedPages[url] = true;
+
+      if (this.xhrOptions.cachePages && this.pageCache[url]) {
+        callback(this.pageCache[url]);
+      } else {
+        $.ajax({
+          url: url,
+          async: true,
+          global: !isPreload,
+          success: function success(response, textStatus) {
+            callback(response, textStatus, null);
+            if (response && _this8.xhrOptions.cachePages) {
+              _this8.pageCache[url] = response;
+            }
+          },
+          error: function error(jqXHR, textStatus, _error) {
+            callback(jqXHR.responseText, textStatus, _error);
+          }
+        });
+      }
+    }
+  }, {
+    key: "goToURL",
+    value: function goToURL(url, dontPush) {
+      var _this9 = this;
+
+      var originalURL = url;
+      var requestID = ++this.XHRRequestCounter;
+
+      this.lastURL = url;
+
+      // See if any widgets want to intercept this request instead
+      var allWidgets = this.getAllWidgets();
+      var urlPath = url.replace(/\#.+$/, '').match(/:\/\/[^\/]+(.*)/);
+      for (var k in allWidgets) {
+        var widget = allWidgets[k];
+        if (widget && widget.xhrPageWillLoad) {
+          var result = widget.xhrPageWillLoad(urlPath, url);
+          if (result === false) {
+            history.pushState({}, null, originalURL);
+            if (window.ga) {
+              // Inform Google Analytics
+              ga('send', {
+                hitType: 'pageview',
+                page: location.pathname
+              });
+            }
+            return;
+          }
+        }
+      }
+
+      if (this.xhrOptions.scrollAnimation) {
+        var htmlBody = $("html,body").stop(true).animate({ scrollTop: 0 }, this.xhrOptions.scrollAnimation).one('scroll', function () {
+          htmlBody.stop(true);
+        });
+      }
+
+      this.emit("xhrLoadStart");
+
+      this.getContent(originalURL, function (response, textStatus) {
+        if (requestID !== _this9.XHRRequestCounter) {
+          // Looks like another request was made after this one, so ignore the response.
+          return;
+        }
+        _this9.emit("xhrTransitioningOut");
+
+        // Alter the response to keep the body tag
+        response = response.replace(/(<\/?)body/g, '$1bodyfake');
+        response = response.replace(/(<\/?)head/g, '$1headfake');
+
+        // Convert the text response to DOM structure
+        var result = $("<div>" + response + "</div>");
+
+        // Pull out the contents
+        var foundPageContainer = result.find(".xhr-page-contents, [data-page-container]").first();
+
+        if (foundPageContainer.length === 0) {
+          // Could not find a page container element :/ just link to the page
+          window.location.href = originalURL;
+          console.error("Could not find an element with a `data-page-container` attribute within the fetched XHR page response. Sending user directly to the page.");
+          return;
+        }
+
+        // Grab content
+        var newContent = $("<div class='xhr-page-contents'></div>").append(foundPageContainer.children());
+
+        _this9.emit("xhrLoadMiddle");
+
+        var finalize = function finalize() {
+          _this9.emit("xhrLoadEnd");
+
+          // Grab the page title
+          var title = result.find("title").html();
+
+          // Grab any resources
+          var includes = result.find("headfake").find("script, link[rel=stylesheet]");
+
+          // Grab the body class
+          var bodyClass = result.find("bodyfake").attr('class');
+          bodyClass = _this9.xhrOptions.filterBodyClasses(document.body.className, bodyClass);
+
+          var oldPageState = _this9.pageState;
+          _this9.pageState = result.find("pagestate").data('state');
+
+          // Look for gravity forms scripts in the footer
+          // result.find("script").each((k, el) => {
+          //   if(!el.getAttribute('src') && el.innerHTML.indexOf("var gf_global")) {
+          //
+          //   }
+          // })
+
+          // Set page title
+          $("head title").html(title);
+          _this9.xhrOptions.swapBodyClasses(bodyClass + " xhr-transitioning-out");
+
+          var existingScripts = $(document.head).find("script");
+          var existingStylesheets = $(document.head).find("link[rel=stylesheet]");
+
+          // Swap menus out
+          var swapMenus = function swapMenus() {
+            result.find("ul.menu").each(function (k, item) {
+
+              if (item.parentNode.parentNode.getAttribute('data-swap-classes')) {
+                // Just swap classes for each li
+                var id = item.getAttribute('id');
+                if (!id) return;
+                // var el = $('#'+id.replace(/\-[0-9]+/, ''))
+                var el = $('#' + id);
+
+                var existingItems = el.find("li");
+
+                if (existingItems.length) {
+                  $(item).find("li").each(function (k, li) {
+                    existingItems[k].className = li.className;
+                  });
+                }
+              } else {
+                // Swap the entire contents (default behaviour)
+                var id = item.getAttribute('id');
+                if (!id) return;
+                // var el = $('#'+id.replace(/\-[0-9]+/, ''))
+                var el = $('#' + id).html(item.innerHTML);
+                _this9.handleXHRLinks(el);
+              }
+            });
+          };
+
+          // Swap WP 'Edit Post' link
+          var editButton = result.find("#wp-admin-bar-edit");
+          if (editButton.length) {
+            $("#wp-admin-bar-edit").html(editButton.html());
+          }
+
+          // Apply any missing scripts
+          includes.each(function (i, el) {
+
+            if ($(el).parents("[data-page-container]").length) return;
+
+            if (el.tagName == "SCRIPT") {
+
+              var scriptSrc = el.src.replace(/\?.*$/, '');
+              var includeScript = true;
+              existingScripts.each(function (k, el) {
+                var elSrc = el.src.replace(/\?.*$/, '');
+                if (scriptSrc == elSrc) {
+                  includeScript = false;
+                }
+              });
+
+              if (includeScript) {
+                $(el).appendTo(document.head);
+              }
+            } else if (el.tagName == "LINK") {
+
+              var linkHref = el.href.replace(/\?.*$/, '');
+              var includeStyles = true;
+              existingStylesheets.each(function (k, el) {
+                var elHref = el.href.replace(/\?.*$/, '');
+                if (linkHref == elHref) {
+                  includeStyles = false;
+                }
+              });
+
+              if (includeStyles) {
+                $(el).appendTo(document.head);
+              }
+            }
+          });
+
+          // Grab old content, by wrapping it in a span
+          var oldContent = _this9.XHRPageContainer.children('.xhr-page-contents');
+          if (oldContent.length === 0) {
+            _this9.XHRPageContainer.wrapInner("<span class='xhr-page-contents'></span>");
+            oldContent = _this9.XHRPageContainer.children().first();
+          }
+
+          // Add new content to the page
+          try {
+            _this9.XHRPageContainer.append(newContent);
+          } catch (e) {}
+
+          newContent.hide();
+
+          // Apply to history
+          if (!dontPush) {
+
+            history.replaceState(Object.assign({}, history.state, _this9.generateReplaceState('apply to history')), null);
+            history.pushState({}, title, originalURL);
+            if (window.ga) {
+              // Inform Google Analytics
+              ga('send', {
+                hitType: 'pageview',
+                page: location.pathname
+              });
+            }
+          }
+
+          _this9.emit('xhrWillTransition');
+
+          // Destroy existing widgets
+          var steps = [function (next) {
+            _this9.initWidgets(newContent);
+            Promise.race([new Promise(function (resolve) {
+              return _this9.preloadWidgets(newContent, resolve);
+            }), new Promise(function (resolve) {
+              return setTimeout(resolve, 6000);
+            })]).then(next);
+          }, function (next) {
+            _this9.transitionWidgetsOut(oldContent, oldPageState, _this9.pageState, true, next);
+          }, function (next) {
+            // Set up links and widgets
+            swapMenus();
+            newContent.show();
+            _this9.forceResizeWindow();
+            _this9.handleXHRLinks(newContent);
+            newContent.hide();
+
+            // Perform the swap!
+            _this9.emit('xhrWillSwapContent');
+            var delay = _this9.xhrOptions.widgetTransitionDelay;
+            delay = _this9.xhrOptions.swapContent(_this9.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward") || delay;
+            setTimeout(next, delay);
+          }, function (next) {
+            _this9.emit('xhrWillTransitionWidgetsIn');
+            if (history.state && typeof history.state.scrollY === 'number' && !history.state.dontAutoScroll) {
+              console.log('scrolling');
+              _this9.emit('xhrWillScrollToPrevPosition');
+              $('html, body').animate({ scrollTop: history.state.scrollY }, 0);
+            }
+            _this9.transitionWidgetsIn(newContent, _this9.pageState, oldPageState, next);
+          }];
+
+          var stepIndex = 0;
+          var next = function next() {
+            if (stepIndex < steps.length) {
+              steps[stepIndex++](next);
+            } else {
+              _this9.emit("xhrPageChanged");
+            }
+          };
+
+          next();
+        };
+
+        if (_this9.xhrOptions.loadImages) {
+          _this9.preloadContent(newContent, _this9.xhrOptions.imageLoadTimeout, finalize);
+        } else {
+          finalize();
+        }
+      });
+    }
+  }, {
+    key: "preloadWidgets",
+    value: function preloadWidgets(targetEl, callback) {
+      var promises = this.getAllWidgets(targetEl).filter(function (widget) {
+        return widget._preloadWidget;
+      }).map(function (widget) {
+        // Create a 'promise to load'
+        widget.__promiseToLoad = new Promise(function (resolve) {
+          try {
+            widget._preloadWidget(function () {
+              resolve();
+            });
+          } catch (err) {
+            resolve();
+            console.error(err);
+          }
+        });
+        return widget.__promiseToLoad;
+      });
+      Promise.all(promises).then(callback).catch(function (err) {
+        return callback();
+      });
+    }
+  }, {
+    key: "generateReplaceState",
+    value: function generateReplaceState(s) {
+      if ('scrollRestoration' in history && history.scrollRestoration !== 'manual') {
+        history.scrollRestoration = 'manual';
+      }
+      var t = {
+        scrollY: window.scrollY || window.pageYOffset || document.documentElement.scrollTop,
+        scrollX: window.scrollX || window.pageXOffset || document.documentElement.scrollLeft
+      };
+      console.log(s, t);
+      return t;
+    }
+  }, {
+    key: "transitionWidgetsIn",
+    value: function transitionWidgetsIn(targetEl, newState, oldState, callback) {
+      var _this10 = this;
+
+      var foundTransition = false;
+      var finalDelay = 0;
+
+      targetEl.find("[data-widget]").each(function (index, el) {
+
+        el = $(el);
+        var widgets = _this10.getWidgetDefs(el);
+
+        for (var k in widgets) {
+          if (widgets[k].instance && widgets[k].instance._transitionIn) {
+            var delay;
+
+            (function () {
+              var widget = widgets[k].instance;
+              if (widget.__promiseToLoad) {
+                widget.__promiseToLoad.then(function () {
+                  widget._transitionIn(newState, oldState, _this10.xhrOptions.widgetTransitionDelay);
+                });
+              } else {
+                delay = widget._transitionIn(newState, oldState, _this10.xhrOptions.widgetTransitionDelay);
+
+                foundTransition = true;
+                finalDelay = Math.max(delay, finalDelay);
+              }
+            })();
+          }
+        }
+      });
+
+      if (foundTransition && finalDelay) {
+        setTimeout(callback, finalDelay);
+      } else if (foundTransition && !finalDelay) {
+        setTimeout(callback, this.xhrOptions.widgetTransitionDelay);
+      } else {
+        callback();
+      }
+    }
+  }, {
+    key: "transitionWidgetsOut",
+    value: function transitionWidgetsOut(targetEl, newState, oldState, destroy, callback) {
+
+      var foundTransition = false;
+      var finalDelay = 0;
+
+      var widgets = this.getAllWidgets(targetEl);
+
+      var _iteratorNormalCompletion2 = true;
+      var _didIteratorError2 = false;
+      var _iteratorError2 = undefined;
+
+      try {
+        for (var _iterator2 = widgets[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+          var widget = _step2.value;
+
+          foundTransition = true;
+          if (widget._transitionOut) {
+            var delay = widget._transitionOut(newState, oldState, this.xhrOptions.widgetTransitionDelay);
+            finalDelay = Math.max(delay, finalDelay);
+            if (destroy) {
+              widget.destroy();
+            }
+          }
+        }
+      } catch (err) {
+        _didIteratorError2 = true;
+        _iteratorError2 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion2 && _iterator2.return) {
+            _iterator2.return();
+          }
+        } finally {
+          if (_didIteratorError2) {
+            throw _iteratorError2;
+          }
+        }
+      }
+
+      if (foundTransition && finalDelay) {
+        setTimeout(callback, finalDelay);
+      } else if (foundTransition && !finalDelay) {
+        setTimeout(callback, this.xhrOptions.widgetTransitionDelay);
+      } else {
+        callback();
+      }
+    }
+  }, {
+    key: "wrapXHRInner",
+    value: function wrapXHRInner() {
+      var target = this.XHRPageContainer;
+      var wrapper = $("<span class='xhr-page-contents'></span>");
+      wrapper.appendTo(target).append(target.children());
+    }
+  }, {
+    key: "initXHRPageSystem",
+    value: function initXHRPageSystem() {
+      var _this11 = this;
+
+      if (!this.xhrOptions.xhrEnabled) return;
+
+      // Grab the page container, if one exists
+      this.XHRPageContainer = $("[data-page-container]:first");
+      if (this.XHRPageContainer.length === 0) {
+        this.XHRPageContainer = null;
+        return;
+      }
+
+      // Add event listeners to jQuery which will add/remove the 'xhr-loading' class
+      $(document).ajaxStart(function () {
+        $(document.body).addClass("xhr-loading");
+        _this11.emit("xhrLoadingStart");
+      }).ajaxStop(function () {
+        $(document.body).removeClass("xhr-loading");
+        _this11.emit("xhrLoadingStop");
+      });
+
+      // Add event listeners to links where appropriate
+      this.handleXHRLinks();
+
+      if (history.replaceState) {
+        history.replaceState(window.history.state, window.title, window.location.href);
+      }
+
+      // Handle browser back button
+      window.addEventListener("popstate", function (e) {
+        if (e.state) {
+          var wasDefaultPrevented = false;
+          e.preventDefault = function () {
+            wasDefaultPrevented = true;
+          };
+          _this11.emit('xhrPopState', e);
+          if (!wasDefaultPrevented) {
+            _this11.goToURL(window.location.href, true);
+          }
+        }
+      });
+    }
+  }, {
+    key: "handleXHRLinks",
+    value: function handleXHRLinks(targetEl) {
+      var _this12 = this;
+
+      targetEl = $(targetEl || document.body);
+
+      var baseURL = window.location.origin;
+
+      targetEl.find("a").each(function (index, el) {
+        var linkEl = $(el);
+        if (linkEl.data('prevent-xhr') || linkEl.data('xhr-event-added')) return;
+        if (linkEl.attr('target')) return;
+
+        if (linkEl.parents("#wpadminbar").length || linkEl.parents("[data-prevent-xhr]").length) return;
+
+        // Ensure the URL is usable
+        var url = el.href;
+        if (url.indexOf(baseURL) !== 0) {
+          // Link is not on this site
+          return;
+        }
+        if (url.match(/(wp-admin|wp-login)/g)) {
+          // A bit too wordpressy
+          return;
+        }
+        if (url.match(/\.[a-z]$/i) || url.match(/(mailto|tel):/i)) {
+          // Link is a file
+          return;
+        }
+        if (url.match(/\#/)) {
+          // link contains a hashbang
+          return;
+        }
+
+        if (_this12.xhrOptions.cachePages) {
+          if (!linkEl.data('no-preload') && linkEl.parents('[data-no-preload]').length === 0) {
+            _this12.pagePreloadQueue.push(el.href);
+            _this12.preloadPages();
+          }
+        }
+
+        linkEl.click(function (e) {
+          if (!e.metaKey && !e.ctrlKey) {
+            _this12.emit('xhrLinkClick', e, $(linkEl));
+            // A dev can use e.preventDefault() to also prevent any XHR transitions!
+            if (!e.isDefaultPrevented()) {
+              e.preventDefault();
+              if (!_this12.clickingDisabled) {
+                _this12.goToURL(el.href);
+              }
+            }
+          }
+        });
+      });
+    }
+  }, {
+    key: "disableClickingFor",
+    value: function disableClickingFor(duration) {
+      var _this13 = this;
+
+      if (this.clickingDisabled) {
+        duration = Math.max(this.clickingDisabled, duration);
+      }
+      this.clickingDisabled = duration;
+      clearTimeout(this.disabledClickTimer);
+      this.disabledClickTimer = setTimeout(function () {
+        _this13.clickingDisabled = false;
+      }, duration);
+    }
+  }, {
+    key: "callAPI",
+    value: function callAPI(method, args, callback) {
+
+      if (args instanceof Function) {
+        callback = args;
+        args = null;
+      }
+
+      $.ajax({
+        method: 'post',
+        url: "/json-api/" + method,
+        data: JSON.stringify(args),
+        dataType: "json",
+        success: function success(response) {
+          callback(response.error, response.result);
+        },
+        error: function error(jqXHR, textStatus, errorThrown) {
+          var message = "";
+          if (textStatus && XHRErrorCodes[textStatus]) {
+            message = XHRErrorCodes[textStatus];
+          } else {
+            message = "Server error occurred while making API request";
+          }
+          if (errorThrown && message) {
+            message += ": " + errorThrown;
+          }
+          callback({
+            code: textStatus || errorThrown,
+            message: message,
+            info: null
+          }, null);
+        }
+      });
+    }
+  }]);
+
+  return Site;
 }(EventEmitter);
 
 var XHRErrorCodes = {
-	"timeout": "Timed out while making API request",
-	"abort": "XHR request was aborted",
-	"error": "XHR request encountered an error",
-	"parsererror": "Unable to parse API request"
+  "timeout": "Timed out while making API request",
+  "abort": "XHR request was aborted",
+  "error": "XHR request encountered an error",
+  "parsererror": "Unable to parse API request"
 };
 
 var baseWidget = {
-	debounce: function debounce(callback, time, name) {
-		var _this12 = this;
+  debounce: function debounce(callback, time, name) {
+    var _this14 = this;
 
-		var self = this;
+    var self = this;
 
-		name = name || '_';
+    name = name || '_';
 
-		self._scheduledTimers = self._scheduledTimers || {};
+    self._scheduledTimers = self._scheduledTimers || {};
 
-		clearTimeout(this._scheduledTimers[name]);
+    clearTimeout(this._scheduledTimers[name]);
 
-		this._scheduledTimers[name] = setTimeout(function () {
-			callback.call(_this12);
-		}, time);
-	},
-	throttle: function throttle(callback, time, name, val) {
-		var _this13 = this;
+    this._scheduledTimers[name] = setTimeout(function () {
+      callback.call(_this14);
+    }, time);
+  },
+  throttle: function throttle(callback, time, name, val) {
+    var _this15 = this;
 
-		var self = this;
-		name = name || '_';
+    var self = this;
+    name = name || '_';
 
-		self._throttled = self._throttled || {};
-		self._scheduledTimers = self._scheduledTimers || {};
+    self._throttled = self._throttled || {};
+    self._scheduledTimers = self._scheduledTimers || {};
 
-		if (self._throttled[name] === undefined) {
-			clearTimeout(this._scheduledTimers[name]);
-			this._scheduledTimers[name] = setTimeout(function () {
-				_this13._scheduledTimers[name] = null;
-				self._throttled[name] = undefined;
-			}, time);
-			self._throttled[name] = val;
-			callback();
-		}
-	},
-	afterInit: function afterInit(callback) {
-		var _this14 = this;
+    if (self._throttled[name] === undefined) {
+      clearTimeout(this._scheduledTimers[name]);
+      this._scheduledTimers[name] = setTimeout(function () {
+        _this15._scheduledTimers[name] = null;
+        self._throttled[name] = undefined;
+      }, time);
+      self._throttled[name] = val;
+      callback();
+    }
+  },
+  afterInit: function afterInit(callback) {
+    var _this16 = this;
 
-		$(document).bind('afterWidgetsInit.' + this.uuid, function () {
-			callback.call(_this14);
-			$(document).unbind('afterWidgetsInit.' + _this14.uuid);
-		});
-	},
-	instance: function instance() {
-		return this;
-	}
+    $(document).bind('afterWidgetsInit.' + this.uuid, function () {
+      callback.call(_this16);
+      $(document).unbind('afterWidgetsInit.' + _this16.uuid);
+    });
+  },
+  instance: function instance() {
+    return this;
+  }
 };
 
 module.exports = Site;

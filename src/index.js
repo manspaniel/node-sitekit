@@ -12,13 +12,13 @@ const jQuery = (() => {
 const $ = jQuery
 const EventEmitter = require('events').EventEmitter
 
-function flatten (arr, ...args){
+const flatten = (arr, ...args) => {
   return [].concat(arr, args).reduce((res, obj) => {
     return clone(res, obj)
   }, {})
 }
 
-function clone(...args){
+const clone = (...args) => {
   return $.extend({}, ...args)
 }
 
@@ -357,7 +357,7 @@ class Site extends EventEmitter {
         })
     })
   
-    const saved = saveWidgetProps(def, mixeds, name)
+    const saved = this.saveWidgetProps(def, mixeds, name)
     
     return clone(def, flatten(mixeds, saved))
   }
@@ -806,8 +806,7 @@ class Site extends EventEmitter {
 					(next) => {
 						this.emit('xhrWillTransitionWidgetsIn')
 						if(history.state && typeof history.state.scrollY === 'number' && !history.state.dontAutoScroll){
-							console.log('scrolling')
-							this.emit('xhrWillScrollToPrevPosition')
+              this.emit('xhrWillScrollToPrevPosition')
 							$('html, body').animate({scrollTop: history.state.scrollY}, 0)
 						}
 						this.transitionWidgetsIn(newContent, this.pageState, oldPageState, next)

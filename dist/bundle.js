@@ -12130,7 +12130,7 @@ var jQuery = function () {
 var $ = jQuery;
 var EventEmitter = require('events').EventEmitter;
 
-function flatten(arr) {
+var flatten = function flatten(arr) {
   for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
     args[_key - 1] = arguments[_key];
   }
@@ -12138,15 +12138,15 @@ function flatten(arr) {
   return [].concat(arr, args).reduce(function (res, obj) {
     return clone(res, obj);
   }, {});
-}
+};
 
-function clone() {
+var clone = function clone() {
   for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
     args[_key2] = arguments[_key2];
   }
 
   return $.extend.apply($, [{}].concat(args));
-}
+};
 
 var Site = function (_EventEmitter) {
   _inherits(Site, _EventEmitter);
@@ -12527,7 +12527,7 @@ var Site = function (_EventEmitter) {
         });
       });
 
-      var saved = saveWidgetProps(def, mixeds, name);
+      var saved = this.saveWidgetProps(def, mixeds, name);
 
       return clone(def, flatten(mixeds, saved));
     }
@@ -12972,7 +12972,6 @@ var Site = function (_EventEmitter) {
           }, function (next) {
             _this9.emit('xhrWillTransitionWidgetsIn');
             if (history.state && typeof history.state.scrollY === 'number' && !history.state.dontAutoScroll) {
-              console.log('scrolling');
               _this9.emit('xhrWillScrollToPrevPosition');
               $('html, body').animate({ scrollTop: history.state.scrollY }, 0);
             }

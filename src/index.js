@@ -12,20 +12,49 @@ const jQuery = (() => {
 const $ = jQuery
 const EventEmitter = require('events').EventEmitter
 
+const flatten = (arr, ...args) => {
+  return [].concat(arr, args).reduce((res, obj) => {
+    return clone(res, obj)
+  }, {})
+}
+
+const clone = (...args) => {
+  return $.extend({}, ...args)
+}
+
 class Site extends EventEmitter {
 
   constructor() {
-
-		super()
-
+    super()
+    this.EVENTS = {
+      LOADED: 'loaded',
+      READY: 'ready',
+      AFTER_WIDGETS_INIT: 'afterWidgetsInit',
+      XHR_LOAD_START: 'xhrLoadStart',
+      XHR_TRANSITIONING_OUT: 'xhrTransitioningOut',
+      XHR_LOAD_MIDDLE: 'xhrLoadMiddle',
+      XHR_LOAD_END: 'xhrLoadEnd',
+      XHR_WILL_TRANSITION: 'xhrWillTransition',
+      XHR_WILL_TRANSITION_OUT: 'xhrWillTransitionOut',
+      XHR_WILL_SWAP_CONTENT: 'xhrWillSwapContent',
+      XHR_WILL_TRANSITION_WIDGETS_IN: 'xhrWillTransitionWidgetsIn',
+      XHR_WILL_SCROLL_TO_PREV_POSITION: 'xhrWillScrollToPrevPosition',
+      XHR_PAGE_CHANGED: 'xhrPageChanged',
+      XHR_LOADING_START: 'xhrLoadingStart',
+      XHR_LOADING_STOP: 'xhrLoadingStop',
+      XHR_POP_STATE: 'xhrPopState',
+      XHR_LINK_CLICK: 'xhrLinkClick',
+    }
+    
+    const size = 40
 		const style = `
 			font-size: 1px;
-			line-height:${20}px;padding:${20 * .5}px ${40 * .5}px;
-			background-size: ${40}px ${30}px;
+			line-height:${size*.5}px;padding:${size*.25}px ${size*.5}px;
+			background-size: ${size}px ${size*.75}px;
 			background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg class='header-logo' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' viewBox='0 0 84 45' enable-background='new 0 0 84 45' xml:space='preserve'%3e%3cstyle%3e %23ED_Logo%7btransition: transform 0.3s;%7d %23ED_Logo:hover%7btransform: scale(1.1);%7d %3c/style%3e%3cg id='ED_Logo'%3e%3cg%3e%3cpath d='M11.4,34.4h19.2V45H0V0h30.6v10.6H11.4v6.6h18.8v10.7H11.4V34.4z'%3e%3c/path%3e%3cpath d='M51.1,0c15.3,0,23,11.3,23,22.6c0,11.2-7.7,22.4-23,22.4H33.6V0H51.1z M51.1,34.5c7.8,0,11.8-6,11.8-12 c0-5.9-4-12.2-11.8-12.2h-6.2v24.1C44.9,34.5,48.2,34.5,51.1,34.5z'%3e%3c/path%3e%3cpath d='M84,39.3c0,2.8-2.6,5.7-6.2,5.7c-3.3,0-6-2.9-6-5.7c0-3.4,2.7-5.7,6-5.7C81.4,33.6,84,35.9,84,39.3z'%3e%3c/path%3e%3c/g%3e%3c/g%3e%3c/svg%3e");
 			background-repeat:no-repeat;
 			background-position:center;
-		`
+    `
 		console.log('%c\n', style, '\nSite by ED.\nhttps://ed.com.au');
 
     this.$ = jQuery
@@ -103,10 +132,10 @@ class Site extends EventEmitter {
     this.initWidgets()
     this.initXHRPageSystem()
     this.preloadWidgets($(document.body), () => {
-      this.emit('loaded')
+      this.emit(this.EVENTS.LOADED)
     })
     this.transitionWidgetsIn($(document.body), this.pageState, { initial: true }, () => {})
-    this.emit('ready')
+    this.emit(this.EVENTS.READY)
   }
 
   initLiveReload() {
@@ -284,8 +313,8 @@ class Site extends EventEmitter {
 
     })
 
-    this.emit('afterWidgetsInit')
-
+    this.emit(this.EVENTS.AFTER_WIDGETS_INIT)
+    
   }
 
   reportError (...args) {
@@ -294,11 +323,77 @@ class Site extends EventEmitter {
     }
   }
 
+  propsToSave(){
+    return ['_create', '_destroy', '_transitionIn', '_transitionOut']
+  }
+
+  saveWidgetProps(self, mixins, name){
+    return this.propsToSave().reduce((result, key) => {
+      // Replaces the protected prop with a function that sequentially calls
+      // the protected prop on all extensions
+      result[key] = function(...args){
+        if(typeof self[key] === 'function') self[key].apply(this, args)
+  
+        mixins
+          .filter(x => typeof x[key] === 'function')
+          .forEach(mixin => {
+            mixin[key].apply(this, args)
+          })
+      }
+      return result
+    }, {})
+  }
+
+  prepWidgetExtensions(name, def){
+    const mixins = def.use
+    const meta = []
+    const mixeds = mixins.map(mixin => {
+      meta.push({name: mixin.name})
+      return mixin(this, this.$, name, clone(def))
+    })
+  
+  
+    // Warn of overwritten props
+    mixeds.forEach((mix, curr) => {
+      Object.keys(mix)
+        .filter(k => !this.propsToSave().includes(k))
+        .forEach(k => {
+          if(def[k]){
+            console.warn(`The prop ${k} will be overwritten by extension ${mixins[curr].name || curr}`)
+          }
+          // only check mixins below this current one
+          mixeds
+          .map((mixed, i) => {
+            return {mix: mixed, name: meta[i].name}
+          })
+          .filter((_, i) => i < curr)
+          .forEach((mixed, i) => {
+            if(mixed.mix[k]){
+              console.warn(`The prop ${k} from extension ${mixed.name || i} will be overwritten by extension ${mixins[curr].name || curr}`)
+            }
+          })
+        })
+    })
+  
+    const saved = this.saveWidgetProps(def, mixeds, name)
+    
+    return clone(def, flatten(mixeds, saved))
+  }
+  
   widget(name, def, explicitBase) {
+    let finalDef = def
+    // widget.use is an array we will treat it as an array of extensions
+    if(def.use){
+      if(Array.isArray(def.use)){
+        finalDef = this.prepWidgetExtensions(name, def)
+      }else{
+        console.warn(`The ${name} widget has property 'use' but it is not an array.`)
+      }
+    }
     if(name.indexOf('.') === -1) {
       name = 'ui.'+name
     }
-    $.widget(name, $.extend({}, baseWidget, explicitBase || {}, def))
+    $.widget(name, $.extend({}, baseWidget, explicitBase || {}, finalDef))
   }
 
 	preloadImages(srcs, timeout, callback) {
@@ -526,16 +621,15 @@ class Site extends EventEmitter {
   			htmlBody.stop(true)
   		})
     }
-
-		this.emit("xhrLoadStart")
-
+    
+		this.emit(this.EVENTS.XHR_LOAD_START)
+		
 		this.getContent(originalURL, (response, textStatus) => {
 			if(requestID !== this.XHRRequestCounter) {
 				// Looks like another request was made after this one, so ignore the response.
 				return
 			}
-			this.emit("xhrTransitioningOut")
-
+			this.emit(this.EVENTS.XHR_TRANSITIONING_OUT)
 			// Alter the response to keep the body tag
 			response = response.replace(/(<\/?)body/g, '$1bodyfake')
 			response = response.replace(/(<\/?)head/g, '$1headfake')
@@ -555,12 +649,12 @@ class Site extends EventEmitter {
 
 			// Grab content
 			var newContent = $("<div class='xhr-page-contents'></div>").append(foundPageContainer.children())
-
-			this.emit("xhrLoadMiddle")
-
+      
+			this.emit(this.EVENTS.XHR_LOAD_MIDDLE)
+			
 			var finalize = () => {
-				this.emit("xhrLoadEnd")
-
+				this.emit(this.EVENTS.XHR_LOAD_END)
+				
 				// Grab the page title
 				var title = result.find("title").html()
 
@@ -697,9 +791,7 @@ class Site extends EventEmitter {
             })
           }
 				}
-
-        this.emit('xhrWillTransition')
-
+        this.emit(this.EVENTS.XHR_WILL_TRANSITION)
 				// Destroy existing widgets
 				var steps = [
           (next) => {
@@ -721,16 +813,15 @@ class Site extends EventEmitter {
 						newContent.hide()
 
 						// Perform the swap!
-            this.emit('xhrWillSwapContent')
+            this.emit(this.EVENTS.XHR_WILL_SWAP_CONTENT)
 						var delay = this.xhrOptions.widgetTransitionDelay
 						delay = this.xhrOptions.swapContent(this.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward") || delay
 						setTimeout(next, delay)
 					},
 					(next) => {
-						this.emit('xhrWillTransitionWidgetsIn')
+						this.emit(this.EVENTS.XHR_WILL_TRANSITION_WIDGETS_IN)
 						if(history.state && typeof history.state.scrollY === 'number' && !history.state.dontAutoScroll){
-							// console.log('scrolling')
-							this.emit('xhrWillScrollToPrevPosition')
+              this.emit(this.EVENTS.XHR_WILL_SCROLL_TO_PREV_POSITION)
 							$('html, body').animate({scrollTop: history.state.scrollY}, 0)
 						}
 						this.transitionWidgetsIn(newContent, this.pageState, oldPageState, next)
@@ -742,7 +833,7 @@ class Site extends EventEmitter {
 					if(stepIndex < steps.length) {
 						steps[stepIndex++](next)
 					} else {
-						this.emit("xhrPageChanged")
+						this.emit(this.EVENTS.XHR_PAGE_CHANGED)
 					}
 				}
 
@@ -880,10 +971,10 @@ class Site extends EventEmitter {
 		// Add event listeners to jQuery which will add/remove the 'xhr-loading' class
 		$(document).ajaxStart(() => {
 			$(document.body).addClass("xhr-loading")
-			this.emit("xhrLoadingStart")
+			this.emit(this.EVENTS.XHR_LOAD_START)
 		}).ajaxStop(() => {
 			$(document.body).removeClass("xhr-loading")
-			this.emit("xhrLoadingStop")
+			this.emit(this.EVENTS.XHR_LOADING_STOP)
 		})
 
 		// Add event listeners to links where appropriate
@@ -900,7 +991,7 @@ class Site extends EventEmitter {
         e.preventDefault = () => {
           wasDefaultPrevented = true
         }
-        this.emit('xhrPopState', e)
+        this.emit(this.EVENTS.XHR_POP_STATE, e)
         if(!wasDefaultPrevented) {
   				this.goToURL(window.location.href, true)
         }
@@ -950,7 +1041,7 @@ class Site extends EventEmitter {
 
 			linkEl.click((e) => {
 				if(!e.metaKey && !e.ctrlKey) {
-					this.emit('xhrLinkClick', e, $(linkEl))
+					this.emit(this.EVENTS.XHR_LINK_CLICK, e, $(linkEl))
           // A dev can use e.preventDefault() to also prevent any XHR transitions!
           if(!e.isDefaultPrevented()) {
             e.preventDefault()

@@ -13163,7 +13163,7 @@ var Site = function (_EventEmitter) {
       // Add event listeners to jQuery which will add/remove the 'xhr-loading' class
       $(document).ajaxStart(function () {
         $(document.body).addClass("xhr-loading");
-        _this11.emit(_this11.EVENTS.XHR_LOAD_START);
+        _this11.emit(_this11.EVENTS.XHR_LOADING_START);
       }).ajaxStop(function () {
         $(document.body).removeClass("xhr-loading");
         _this11.emit(_this11.EVENTS.XHR_LOADING_STOP);

@@ -45,7 +45,7 @@ class Site extends EventEmitter {
       XHR_POP_STATE: 'xhrPopState',
       XHR_LINK_CLICK: 'xhrLinkClick',
     }
-    
+
     const size = 40
 		const style = `
 			font-size: 1px;
@@ -314,7 +314,7 @@ class Site extends EventEmitter {
     })
 
     this.emit(this.EVENTS.AFTER_WIDGETS_INIT)
-    
+
   }
 
   reportError (...args) {
@@ -333,7 +333,7 @@ class Site extends EventEmitter {
       // the protected prop on all extensions
       result[key] = function(...args){
         if(typeof self[key] === 'function') self[key].apply(this, args)
-  
+
         mixins
           .filter(x => typeof x[key] === 'function')
           .forEach(mixin => {
@@ -351,8 +351,8 @@ class Site extends EventEmitter {
       meta.push({name: mixin.name})
       return mixin(this, this.$, name, clone(def))
     })
-  
-  
+
+
     // Warn of overwritten props
     mixeds.forEach((mix, curr) => {
       Object.keys(mix)
@@ -374,12 +374,12 @@ class Site extends EventEmitter {
           })
         })
     })
-  
+
     const saved = this.saveWidgetProps(def, mixeds, name)
-    
+
     return clone(def, flatten(mixeds, saved))
   }
-  
+
   widget(name, def, explicitBase) {
     let finalDef = def
     // widget.use is an array we will treat it as an array of extensions
@@ -621,9 +621,9 @@ class Site extends EventEmitter {
   			htmlBody.stop(true)
   		})
     }
-    
+
 		this.emit(this.EVENTS.XHR_LOAD_START)
-		
+
 		this.getContent(originalURL, (response, textStatus) => {
 			if(requestID !== this.XHRRequestCounter) {
 				// Looks like another request was made after this one, so ignore the response.
@@ -649,12 +649,12 @@ class Site extends EventEmitter {
 
 			// Grab content
 			var newContent = $("<div class='xhr-page-contents'></div>").append(foundPageContainer.children())
-      
+
 			this.emit(this.EVENTS.XHR_LOAD_MIDDLE)
-			
+
 			var finalize = () => {
 				this.emit(this.EVENTS.XHR_LOAD_END)
-				
+
 				// Grab the page title
 				var title = result.find("title").html()
 
@@ -971,7 +971,7 @@ class Site extends EventEmitter {
 		// Add event listeners to jQuery which will add/remove the 'xhr-loading' class
 		$(document).ajaxStart(() => {
 			$(document.body).addClass("xhr-loading")
-			this.emit(this.EVENTS.XHR_LOAD_START)
+			this.emit(this.EVENTS.XHR_LOADING_START)
 		}).ajaxStop(() => {
 			$(document.body).removeClass("xhr-loading")
 			this.emit(this.EVENTS.XHR_LOADING_STOP)

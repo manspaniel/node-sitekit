@@ -22,6 +22,10 @@ const clone = (...args) => {
   return $.extend({}, ...args)
 }
 
+function wait(t){
+  return new Promise( resolve => setTimeout(resolve, t))
+}
+
 class Site extends EventEmitter {
 
   constructor() {
@@ -73,15 +77,17 @@ class Site extends EventEmitter {
   			duration: 220
   		},
       xhrEnabled: true,
-  		loadImages: true,
+      loadImages: true,
+      autoScrollRestore: true,
   		imageLoadTimeout: 3000,
   		widgetTransitionDelay: 0,
   		cachePages: true,
-      swapBodyClasses: (newClasses) => {
+      swapBodyClasses: (newClasses) => new Promise(resolve => {
         setTimeout(() => {
           document.body.className = newClasses
+          resolve()
         }, (this.xhrOptions.widgetTransitionDelay || 500) / 2)
-      },
+      }),
   		swapContent: (container, originalContent, newContent, direction) => {
 
   			var duration = this.xhrOptions.widgetTransitionDelay || 500
@@ -112,7 +118,7 @@ class Site extends EventEmitter {
   		},
   		filterBodyClasses: (oldClasses, newClasses) => {
   			return newClasses
-  		}
+      },
   	}
 
     // Init dev mode
@@ -332,12 +338,13 @@ class Site extends EventEmitter {
       // Replaces the protected prop with a function that sequentially calls
       // the protected prop on all extensions
       result[key] = function(...args){
-        if(typeof self[key] === 'function') self[key].apply(this, args)
-
+        
+        if ( typeof self[key] === 'function' ) self[key].apply(this, args)
         mixins
-          .filter(x => typeof x[key] === 'function')
           .forEach(mixin => {
-            mixin[key].apply(this, args)
+            if ( typeof mixin[key] === 'function' ) {
+              mixin[key].apply(this, args)
+            }
           })
       }
       return result
@@ -548,7 +555,134 @@ class Site extends EventEmitter {
 
 		loadNext()
 
-	}
+  }
+
+  getRefreshes(target){
+    console.log(target)
+    const itemsToRefresh = target.find('[data-xhr-refresh]').addBack( '[data-xhr-refresh]' ).not('[data-page-container] [data-xhr-refresh]').get()
+
+    const items = itemsToRefresh.filter(el => {
+      const id = $(el).attr('id')
+
+      // Warn
+      if ( !id ) {
+        console.warn('Refreshed item', el, 'is missing an id attribute. Include one to refresh the element on page change')
+        return false
+      }
+
+      return true
+    })
+
+    return items
+  }
+  
+  doRefreshes(result){
+    const $page = this.XHRPageContainer.parent().children().not( '[data-page-container]' )
+    const swapping = []
+    const leaving = []
+    const entering = []
+
+    const removeAttributes = el => {
+      const attr = Array.prototype.slice.call( el.prop( 'attributes' ) )
+      attr.forEach(attr => {
+        el.removeAttr( attr.name )
+      })
+    }
+
+    const copyAttributes = (from, to) => {
+      const attr = Array.prototype.slice.call( from.prop( 'attributes' ) ) 
+      attr.forEach(attr => {
+        to.attr( attr.name, from.attr( attr.name ) )
+      })
+    }
+
+    this.getRefreshes( $page )
+    .forEach( item => {
+
+      const $item = $( item )
+      const id = $item.attr( 'id' )
+      const oldKey = $item.attr( 'data-xhr-refresh' )
+
+      const newRefresh = result.find( `#${id}[data-xhr-refresh]` ).addBack( `#${id}[data-xhr-refresh]` )
+
+      // This item isn't in the new dom
+      if ( !newRefresh.length ) {
+        leaving.push( item )
+      }
+
+      // Diff the item
+      const newKey = newRefresh.attr( 'data-xhr-refresh' )
+
+      // Invalidated by key. Completely refresh that thing!
+      // (If it's the same we will probably leave it 😀)
+      if ( newKey !== oldKey ) {
+        swapping.push( [ item, newRefresh.get( 0 ) ] )
+      }
+
+    } )
+
+    this.getRefreshes( result )
+    .forEach( item => {
+      
+      if ( swapping.find( swapped => swapped[1] === item ) ) {
+        // Already swapping this item... ignore
+        return
+      }
+
+      entering.push( item )
+    } )
+
+    const returnVal = {
+      swapping: {
+        items: swapping,
+        swap: ( ) =>  new Promise( resolve => {
+
+          swapping.forEach( item => {
+
+            const $item1 = $( item[0] )
+            const $item2 = $( item[1] )
+            $item1.html( $( $item2 ).html() )
+            removeAttributes( $item1 )
+            copyAttributes( $item2, $item1 )
+            this.initWidgets( $item1.parent() )
+            this.handleXHRLinks( $item1.parent() )
+
+          } )
+
+          resolve()
+        } )
+      },
+      leaving: {
+        items: leaving,
+        $items: $( leaving )
+      },
+      entering: {
+        items: entering,
+        $items: $( entering )
+      }
+    }
+    
+    return returnVal
+
+  }
+
+  restoreScroll(fn){
+
+    const { state } = history
+
+    if(state && typeof state.scrollY === 'number' && !state.dontAutoScroll){
+      
+      this.emit(this.EVENTS.XHR_WILL_SCROLL_TO_PREV_POSITION)
+      
+      if ( typeof fn === 'function' ) {
+        fn(state)
+      } else {
+        window.scrollTo(0, state.scrollY)
+      }
+
+    }
+
+  }
 
   getContent(url, callback, isPreload) {
 
@@ -586,7 +720,7 @@ class Site extends EventEmitter {
 			})
 		}
 
-	}
+  }
 
 	goToURL(url, dontPush) {
 
@@ -614,7 +748,9 @@ class Site extends EventEmitter {
 					return
 				}
 			}
-		}
+    }
+    
+    const scrollToSave = this.generateReplaceState()
 
     if(this.xhrOptions.scrollAnimation) {
   		var htmlBody = $("html,body").stop(true).animate({scrollTop: 0}, this.xhrOptions.scrollAnimation).one('scroll', () => {
@@ -765,6 +901,8 @@ class Site extends EventEmitter {
   				oldContent = this.XHRPageContainer.children().first()
         }
 
+        const refreshes = this.doRefreshes( result )
+
 				// Add new content to the page
 				try {
 					this.XHRPageContainer.append(newContent)
@@ -777,7 +915,13 @@ class Site extends EventEmitter {
 				// Apply to history
 				if(!dontPush) {
 
-					history.replaceState(Object.assign({}, history.state, this.generateReplaceState('apply to history')), null)
+          // Replace the last state just before move on
+          history.replaceState(
+            clone(history.state, scrollToSave), 
+            null
+          )
+          
+          // Move on
 					history.pushState(
 						{},
 						title,
@@ -804,26 +948,41 @@ class Site extends EventEmitter {
 					(next) => {
 						this.transitionWidgetsOut(oldContent, oldPageState, this.pageState, true, next)
 					},
-					(next) => {
+					async (next) => {
 						// Set up links and widgets
             swapMenus()
-						newContent.show()
+            newContent.show()
 						this.forceResizeWindow()
 						this.handleXHRLinks(newContent)
 						newContent.hide()
 
 						// Perform the swap!
             this.emit(this.EVENTS.XHR_WILL_SWAP_CONTENT)
-						var delay = this.xhrOptions.widgetTransitionDelay
-						delay = this.xhrOptions.swapContent(this.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward") || delay
-						setTimeout(next, delay)
+						var delayOrPromise = this.xhrOptions.widgetTransitionDelay
+						delayOrPromise = this.xhrOptions.swapContent(
+              this.XHRPageContainer, 
+              oldContent, 
+              newContent,
+              dontPush ? "back" : "forward",
+
+              // NEW: Everything after newContent is now in an Object
+              {
+                refreshes,
+              }
+            ) || delay
+            
+            if ( typeof delayOrPromise === 'number') {
+              await wait(delayOrPromise)
+            } else {
+              await delayOrPromise
+            }
+            next()
 					},
 					(next) => {
-						this.emit(this.EVENTS.XHR_WILL_TRANSITION_WIDGETS_IN)
-						if(history.state && typeof history.state.scrollY === 'number' && !history.state.dontAutoScroll){
-              this.emit(this.EVENTS.XHR_WILL_SCROLL_TO_PREV_POSITION)
-							$('html, body').animate({scrollTop: history.state.scrollY}, 0)
-						}
+            this.emit(this.EVENTS.XHR_WILL_TRANSITION_WIDGETS_IN)
+            
+            if ( this.xhrOptions.autoScrollRestore ) this.restoreScroll()
+
 						this.transitionWidgetsIn(newContent, this.pageState, oldPageState, next)
 					}
 				]
@@ -849,7 +1008,7 @@ class Site extends EventEmitter {
 
 		})
 
-	}
+  }
 
   preloadWidgets (targetEl, callback) {
     const promises = this.getAllWidgets(targetEl)

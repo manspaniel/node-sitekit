@@ -12148,6 +12148,12 @@ var clone = function clone() {
   return $.extend.apply($, [{}].concat(args));
 };
 
+function wait(t) {
+  return new Promise(function (resolve) {
+    return setTimeout(resolve, t);
+  });
+}
+
 var Site = function (_EventEmitter) {
   _inherits(Site, _EventEmitter);
 
@@ -12197,13 +12203,17 @@ var Site = function (_EventEmitter) {
       },
       xhrEnabled: true,
       loadImages: true,
+      autoScrollRestore: true,
       imageLoadTimeout: 3000,
       widgetTransitionDelay: 0,
       cachePages: true,
       swapBodyClasses: function swapBodyClasses(newClasses) {
-        setTimeout(function () {
-          document.body.className = newClasses;
-        }, (_this.xhrOptions.widgetTransitionDelay || 500) / 2);
+        return new Promise(function (resolve) {
+          setTimeout(function () {
+            document.body.className = newClasses;
+            resolve();
+          }, (_this.xhrOptions.widgetTransitionDelay || 500) / 2);
+        });
       },
       swapContent: function swapContent(container, originalContent, newContent, direction) {
 
@@ -12504,11 +12514,10 @@ var Site = function (_EventEmitter) {
           }
 
           if (typeof self[key] === 'function') self[key].apply(this, args);
-
-          mixins.filter(function (x) {
-            return typeof x[key] === 'function';
-          }).forEach(function (mixin) {
-            mixin[key].apply(_this4, args);
+          mixins.forEach(function (mixin) {
+            if (typeof mixin[key] === 'function') {
+              mixin[key].apply(_this4, args);
+            }
           });
         };
         return result;
@@ -12728,9 +12737,139 @@ var Site = function (_EventEmitter) {
       loadNext();
     }
   }, {
+    key: "getRefreshes",
+    value: function getRefreshes(target) {
+      console.log(target);
+      var itemsToRefresh = target.find('[data-xhr-refresh]').addBack('[data-xhr-refresh]').not('[data-page-container] [data-xhr-refresh]').get();
+
+      var items = itemsToRefresh.filter(function (el) {
+        var id = $(el).attr('id');
+
+        // Warn
+        if (!id) {
+          console.warn('Refreshed item', el, 'is missing an id attribute. Include one to refresh the element on page change');
+          return false;
+        }
+
+        return true;
+      });
+
+      return items;
+    }
+  }, {
+    key: "doRefreshes",
+    value: function doRefreshes(result) {
+      var _this8 = this;
+
+      var $page = this.XHRPageContainer.parent().children().not('[data-page-container]');
+      var swapping = [];
+      var leaving = [];
+      var entering = [];
+
+      var removeAttributes = function removeAttributes(el) {
+        var attr = Array.prototype.slice.call(el.prop('attributes'));
+        attr.forEach(function (attr) {
+          el.removeAttr(attr.name);
+        });
+      };
+
+      var copyAttributes = function copyAttributes(from, to) {
+        var attr = Array.prototype.slice.call(from.prop('attributes'));
+        attr.forEach(function (attr) {
+          to.attr(attr.name, from.attr(attr.name));
+        });
+      };
+
+      this.getRefreshes($page).forEach(function (item) {
+
+        var $item = $(item);
+        var id = $item.attr('id');
+        var oldKey = $item.attr('data-xhr-refresh');
+
+        var newRefresh = result.find("#" + id + "[data-xhr-refresh]").addBack("#" + id + "[data-xhr-refresh]");
+
+        // This item isn't in the new dom
+        if (!newRefresh.length) {
+          leaving.push(item);
+        }
+
+        // Diff the item
+        var newKey = newRefresh.attr('data-xhr-refresh');
+
+        // Invalidated by key. Completely refresh that thing!
+        // (If it's the same we will probably leave it 😀)
+        if (newKey !== oldKey) {
+          swapping.push([item, newRefresh.get(0)]);
+        }
+      });
+
+      this.getRefreshes(result).forEach(function (item) {
+
+        if (swapping.find(function (swapped) {
+          return swapped[1] === item;
+        })) {
+          // Already swapping this item... ignore
+          return;
+        }
+
+        entering.push(item);
+      });
+
+      var returnVal = {
+        swapping: {
+          items: swapping,
+          swap: function swap() {
+            return new Promise(function (resolve) {
+
+              swapping.forEach(function (item) {
+
+                var $item1 = $(item[0]);
+                var $item2 = $(item[1]);
+                $item1.html($($item2).html());
+                removeAttributes($item1);
+                copyAttributes($item2, $item1);
+                _this8.initWidgets($item1.parent());
+                _this8.handleXHRLinks($item1.parent());
+              });
+
+              resolve();
+            });
+          }
+        },
+        leaving: {
+          items: leaving,
+          $items: $(leaving)
+        },
+        entering: {
+          items: entering,
+          $items: $(entering)
+        }
+      };
+
+      return returnVal;
+    }
+  }, {
+    key: "restoreScroll",
+    value: function restoreScroll(fn) {
+      var _history = history,
+          state = _history.state;
+
+
+      if (state && typeof state.scrollY === 'number' && !state.dontAutoScroll) {
+
+        this.emit(this.EVENTS.XHR_WILL_SCROLL_TO_PREV_POSITION);
+
+        if (typeof fn === 'function') {
+          fn(state);
+        } else {
+          window.scrollTo(0, state.scrollY);
+        }
+      }
+    }
+  }, {
     key: "getContent",
     value: function getContent(url, callback, isPreload) {
-      var _this8 = this;
+      var _this9 = this;
 
       url = url.replace(/\#.+/, '');
 
@@ -12756,8 +12895,8 @@ var Site = function (_EventEmitter) {
           global: !isPreload,
           success: function success(response, textStatus) {
             callback(response, textStatus, null);
-            if (response && _this8.xhrOptions.cachePages) {
-              _this8.pageCache[url] = response;
+            if (response && _this9.xhrOptions.cachePages) {
+              _this9.pageCache[url] = response;
             }
           },
           error: function error(jqXHR, textStatus, _error) {
@@ -12769,7 +12908,7 @@ var Site = function (_EventEmitter) {
   }, {
     key: "goToURL",
     value: function goToURL(url, dontPush) {
-      var _this9 = this;
+      var _this10 = this;
 
       var originalURL = url;
       var requestID = ++this.XHRRequestCounter;
@@ -12797,6 +12936,8 @@ var Site = function (_EventEmitter) {
         }
       }
 
+      var scrollToSave = this.generateReplaceState();
+
       if (this.xhrOptions.scrollAnimation) {
         var htmlBody = $("html,body").stop(true).animate({ scrollTop: 0 }, this.xhrOptions.scrollAnimation).one('scroll', function () {
           htmlBody.stop(true);
@@ -12806,11 +12947,11 @@ var Site = function (_EventEmitter) {
       this.emit(this.EVENTS.XHR_LOAD_START);
 
       this.getContent(originalURL, function (response, textStatus) {
-        if (requestID !== _this9.XHRRequestCounter) {
+        if (requestID !== _this10.XHRRequestCounter) {
           // Looks like another request was made after this one, so ignore the response.
           return;
         }
-        _this9.emit(_this9.EVENTS.XHR_TRANSITIONING_OUT);
+        _this10.emit(_this10.EVENTS.XHR_TRANSITIONING_OUT);
         // Alter the response to keep the body tag
         response = response.replace(/(<\/?)body/g, '$1bodyfake');
         response = response.replace(/(<\/?)head/g, '$1headfake');
@@ -12831,10 +12972,10 @@ var Site = function (_EventEmitter) {
         // Grab content
         var newContent = $("<div class='xhr-page-contents'></div>").append(foundPageContainer.children());
 
-        _this9.emit(_this9.EVENTS.XHR_LOAD_MIDDLE);
+        _this10.emit(_this10.EVENTS.XHR_LOAD_MIDDLE);
 
         var finalize = function finalize() {
-          _this9.emit(_this9.EVENTS.XHR_LOAD_END);
+          _this10.emit(_this10.EVENTS.XHR_LOAD_END);
 
           // Grab the page title
           var title = result.find("title").html();
@@ -12844,10 +12985,10 @@ var Site = function (_EventEmitter) {
 
           // Grab the body class
           var bodyClass = result.find("bodyfake").attr('class');
-          bodyClass = _this9.xhrOptions.filterBodyClasses(document.body.className, bodyClass);
+          bodyClass = _this10.xhrOptions.filterBodyClasses(document.body.className, bodyClass);
 
-          var oldPageState = _this9.pageState;
-          _this9.pageState = result.find("pagestate").data('state');
+          var oldPageState = _this10.pageState;
+          _this10.pageState = result.find("pagestate").data('state');
 
           // Look for gravity forms scripts in the footer
           // result.find("script").each((k, el) => {
@@ -12858,7 +12999,7 @@ var Site = function (_EventEmitter) {
 
           // Set page title
           $("head title").html(title);
-          _this9.xhrOptions.swapBodyClasses(bodyClass + " xhr-transitioning-out");
+          _this10.xhrOptions.swapBodyClasses(bodyClass + " xhr-transitioning-out");
 
           var existingScripts = $(document.head).find("script");
           var existingStylesheets = $(document.head).find("link[rel=stylesheet]");
@@ -12887,7 +13028,7 @@ var Site = function (_EventEmitter) {
                 if (!id) return;
                 // var el = $('#'+id.replace(/\-[0-9]+/, ''))
                 var el = $('#' + id).html(item.innerHTML);
-                _this9.handleXHRLinks(el);
+                _this10.handleXHRLinks(el);
               }
             });
           };
@@ -12935,15 +13076,17 @@ var Site = function (_EventEmitter) {
           });
 
           // Grab old content, by wrapping it in a span
-          var oldContent = _this9.XHRPageContainer.children('.xhr-page-contents');
+          var oldContent = _this10.XHRPageContainer.children('.xhr-page-contents');
           if (oldContent.length === 0) {
-            _this9.XHRPageContainer.wrapInner("<span class='xhr-page-contents'></span>");
-            oldContent = _this9.XHRPageContainer.children().first();
+            _this10.XHRPageContainer.wrapInner("<span class='xhr-page-contents'></span>");
+            oldContent = _this10.XHRPageContainer.children().first();
           }
+
+          var refreshes = _this10.doRefreshes(result);
 
           // Add new content to the page
           try {
-            _this9.XHRPageContainer.append(newContent);
+            _this10.XHRPageContainer.append(newContent);
           } catch (e) {}
 
           newContent.hide();
@@ -12951,7 +13094,10 @@ var Site = function (_EventEmitter) {
           // Apply to history
           if (!dontPush) {
 
-            history.replaceState(Object.assign({}, history.state, _this9.generateReplaceState('apply to history')), null);
+            // Replace the last state just before move on
+            history.replaceState(clone(history.state, scrollToSave), null);
+
+            // Move on
             history.pushState({}, title, originalURL);
             if (window.ga) {
               // Inform Google Analytics
@@ -12961,37 +13107,47 @@ var Site = function (_EventEmitter) {
               });
             }
           }
-          _this9.emit(_this9.EVENTS.XHR_WILL_TRANSITION);
+          _this10.emit(_this10.EVENTS.XHR_WILL_TRANSITION);
           // Destroy existing widgets
           var steps = [function (next) {
-            _this9.initWidgets(newContent);
+            _this10.initWidgets(newContent);
             Promise.race([new Promise(function (resolve) {
-              return _this9.preloadWidgets(newContent, resolve);
+              return _this10.preloadWidgets(newContent, resolve);
             }), new Promise(function (resolve) {
               return setTimeout(resolve, 6000);
             })]).then(next);
           }, function (next) {
-            _this9.transitionWidgetsOut(oldContent, oldPageState, _this9.pageState, true, next);
-          }, function (next) {
+            _this10.transitionWidgetsOut(oldContent, oldPageState, _this10.pageState, true, next);
+          }, async function (next) {
             // Set up links and widgets
             swapMenus();
             newContent.show();
-            _this9.forceResizeWindow();
-            _this9.handleXHRLinks(newContent);
+            _this10.forceResizeWindow();
+            _this10.handleXHRLinks(newContent);
             newContent.hide();
 
             // Perform the swap!
-            _this9.emit(_this9.EVENTS.XHR_WILL_SWAP_CONTENT);
-            var delay = _this9.xhrOptions.widgetTransitionDelay;
-            delay = _this9.xhrOptions.swapContent(_this9.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward") || delay;
-            setTimeout(next, delay);
-          }, function (next) {
-            _this9.emit(_this9.EVENTS.XHR_WILL_TRANSITION_WIDGETS_IN);
-            if (history.state && typeof history.state.scrollY === 'number' && !history.state.dontAutoScroll) {
-              _this9.emit(_this9.EVENTS.XHR_WILL_SCROLL_TO_PREV_POSITION);
-              $('html, body').animate({ scrollTop: history.state.scrollY }, 0);
+            _this10.emit(_this10.EVENTS.XHR_WILL_SWAP_CONTENT);
+            var delayOrPromise = _this10.xhrOptions.widgetTransitionDelay;
+            delayOrPromise = _this10.xhrOptions.swapContent(_this10.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward",
+
+            // NEW: Everything after newContent is now in an Object
+            {
+              refreshes: refreshes
+            }) || delay;
+
+            if (typeof delayOrPromise === 'number') {
+              await wait(delayOrPromise);
+            } else {
+              await delayOrPromise;
             }
-            _this9.transitionWidgetsIn(newContent, _this9.pageState, oldPageState, next);
+            next();
+          }, function (next) {
+            _this10.emit(_this10.EVENTS.XHR_WILL_TRANSITION_WIDGETS_IN);
+
+            if (_this10.xhrOptions.autoScrollRestore) _this10.restoreScroll();
+
+            _this10.transitionWidgetsIn(newContent, _this10.pageState, oldPageState, next);
           }];
 
           var stepIndex = 0;
@@ -12999,15 +13155,15 @@ var Site = function (_EventEmitter) {
             if (stepIndex < steps.length) {
               steps[stepIndex++](next);
             } else {
-              _this9.emit(_this9.EVENTS.XHR_PAGE_CHANGED);
+              _this10.emit(_this10.EVENTS.XHR_PAGE_CHANGED);
             }
           };
 
           next();
         };
 
-        if (_this9.xhrOptions.loadImages) {
-          _this9.preloadContent(newContent, _this9.xhrOptions.imageLoadTimeout, finalize);
+        if (_this10.xhrOptions.loadImages) {
+          _this10.preloadContent(newContent, _this10.xhrOptions.imageLoadTimeout, finalize);
         } else {
           finalize();
         }
@@ -13051,7 +13207,7 @@ var Site = function (_EventEmitter) {
   }, {
     key: "transitionWidgetsIn",
     value: function transitionWidgetsIn(targetEl, newState, oldState, callback) {
-      var _this10 = this;
+      var _this11 = this;
 
       var foundTransition = false;
       var finalDelay = 0;
@@ -13059,7 +13215,7 @@ var Site = function (_EventEmitter) {
       targetEl.find("[data-widget]").each(function (index, el) {
 
         el = $(el);
-        var widgets = _this10.getWidgetDefs(el);
+        var widgets = _this11.getWidgetDefs(el);
 
         for (var k in widgets) {
           if (widgets[k].instance && widgets[k].instance._transitionIn) {
@@ -13069,10 +13225,10 @@ var Site = function (_EventEmitter) {
               var widget = widgets[k].instance;
               if (widget.__promiseToLoad) {
                 widget.__promiseToLoad.then(function () {
-                  widget._transitionIn(newState, oldState, _this10.xhrOptions.widgetTransitionDelay);
+                  widget._transitionIn(newState, oldState, _this11.xhrOptions.widgetTransitionDelay);
                 });
               } else {
-                delay = widget._transitionIn(newState, oldState, _this10.xhrOptions.widgetTransitionDelay);
+                delay = widget._transitionIn(newState, oldState, _this11.xhrOptions.widgetTransitionDelay);
 
                 foundTransition = true;
                 finalDelay = Math.max(delay, finalDelay);
@@ -13149,7 +13305,7 @@ var Site = function (_EventEmitter) {
   }, {
     key: "initXHRPageSystem",
     value: function initXHRPageSystem() {
-      var _this11 = this;
+      var _this12 = this;
 
       if (!this.xhrOptions.xhrEnabled) return;
 
@@ -13163,10 +13319,10 @@ var Site = function (_EventEmitter) {
       // Add event listeners to jQuery which will add/remove the 'xhr-loading' class
       $(document).ajaxStart(function () {
         $(document.body).addClass("xhr-loading");
-        _this11.emit(_this11.EVENTS.XHR_LOADING_START);
+        _this12.emit(_this12.EVENTS.XHR_LOADING_START);
       }).ajaxStop(function () {
         $(document.body).removeClass("xhr-loading");
-        _this11.emit(_this11.EVENTS.XHR_LOADING_STOP);
+        _this12.emit(_this12.EVENTS.XHR_LOADING_STOP);
       });
 
       // Add event listeners to links where appropriate
@@ -13183,9 +13339,9 @@ var Site = function (_EventEmitter) {
           e.preventDefault = function () {
             wasDefaultPrevented = true;
           };
-          _this11.emit(_this11.EVENTS.XHR_POP_STATE, e);
+          _this12.emit(_this12.EVENTS.XHR_POP_STATE, e);
           if (!wasDefaultPrevented) {
-            _this11.goToURL(window.location.href, true);
+            _this12.goToURL(window.location.href, true);
           }
         }
       });
@@ -13193,7 +13349,7 @@ var Site = function (_EventEmitter) {
   }, {
     key: "handleXHRLinks",
     value: function handleXHRLinks(targetEl) {
-      var _this12 = this;
+      var _this13 = this;
 
       targetEl = $(targetEl || document.body);
 
@@ -13225,21 +13381,21 @@ var Site = function (_EventEmitter) {
           return;
         }
 
-        if (_this12.xhrOptions.cachePages) {
+        if (_this13.xhrOptions.cachePages) {
           if (!linkEl.data('no-preload') && linkEl.parents('[data-no-preload]').length === 0) {
-            _this12.pagePreloadQueue.push(el.href);
-            _this12.preloadPages();
+            _this13.pagePreloadQueue.push(el.href);
+            _this13.preloadPages();
           }
         }
 
         linkEl.click(function (e) {
           if (!e.metaKey && !e.ctrlKey) {
-            _this12.emit(_this12.EVENTS.XHR_LINK_CLICK, e, $(linkEl));
+            _this13.emit(_this13.EVENTS.XHR_LINK_CLICK, e, $(linkEl));
             // A dev can use e.preventDefault() to also prevent any XHR transitions!
             if (!e.isDefaultPrevented()) {
               e.preventDefault();
-              if (!_this12.clickingDisabled) {
-                _this12.goToURL(el.href);
+              if (!_this13.clickingDisabled) {
+                _this13.goToURL(el.href);
               }
             }
           }
@@ -13249,7 +13405,7 @@ var Site = function (_EventEmitter) {
   }, {
     key: "disableClickingFor",
     value: function disableClickingFor(duration) {
-      var _this13 = this;
+      var _this14 = this;
 
       if (this.clickingDisabled) {
         duration = Math.max(this.clickingDisabled, duration);
@@ -13257,7 +13413,7 @@ var Site = function (_EventEmitter) {
       this.clickingDisabled = duration;
       clearTimeout(this.disabledClickTimer);
       this.disabledClickTimer = setTimeout(function () {
-        _this13.clickingDisabled = false;
+        _this14.clickingDisabled = false;
       }, duration);
     }
   }, {
@@ -13309,7 +13465,7 @@ var XHRErrorCodes = {
 
 var baseWidget = {
   debounce: function debounce(callback, time, name) {
-    var _this14 = this;
+    var _this15 = this;
 
     var self = this;
 
@@ -13320,11 +13476,11 @@ var baseWidget = {
     clearTimeout(this._scheduledTimers[name]);
 
     this._scheduledTimers[name] = setTimeout(function () {
-      callback.call(_this14);
+      callback.call(_this15);
     }, time);
   },
   throttle: function throttle(callback, time, name, val) {
-    var _this15 = this;
+    var _this16 = this;
 
     var self = this;
     name = name || '_';
@@ -13335,7 +13491,7 @@ var baseWidget = {
     if (self._throttled[name] === undefined) {
       clearTimeout(this._scheduledTimers[name]);
       this._scheduledTimers[name] = setTimeout(function () {
-        _this15._scheduledTimers[name] = null;
+        _this16._scheduledTimers[name] = null;
         self._throttled[name] = undefined;
       }, time);
       self._throttled[name] = val;
@@ -13343,11 +13499,11 @@ var baseWidget = {
     }
   },
   afterInit: function afterInit(callback) {
-    var _this16 = this;
+    var _this17 = this;
 
     $(document).bind('afterWidgetsInit.' + this.uuid, function () {
-      callback.call(_this16);
-      $(document).unbind('afterWidgetsInit.' + _this16.uuid);
+      callback.call(_this17);
+      $(document).unbind('afterWidgetsInit.' + _this17.uuid);
     });
   },
   instance: function instance() {

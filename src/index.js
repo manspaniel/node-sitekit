@@ -675,9 +675,12 @@ class Site extends EventEmitter {
       this.emit(this.EVENTS.XHR_WILL_SCROLL_TO_PREV_POSITION)
       
       if ( typeof fn === 'function' ) {
-        fn(state)
+        return fn(state)
       } else {
-        window.scrollTo(0, state.scrollY)
+        return new Promise( resolve => {
+          window.scrollTo(0, state.scrollY)
+          resolve()
+        } )
       }
 
     }

@@ -12860,9 +12860,12 @@ var Site = function (_EventEmitter) {
         this.emit(this.EVENTS.XHR_WILL_SCROLL_TO_PREV_POSITION);
 
         if (typeof fn === 'function') {
-          fn(state);
+          return fn(state);
         } else {
-          window.scrollTo(0, state.scrollY);
+          return new Promise(function (resolve) {
+            window.scrollTo(0, state.scrollY);
+            resolve();
+          });
         }
       }
     }

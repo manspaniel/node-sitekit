@@ -12739,7 +12739,6 @@ var Site = function (_EventEmitter) {
   }, {
     key: "getRefreshes",
     value: function getRefreshes(target) {
-      console.log(target);
       var itemsToRefresh = target.find('[data-xhr-refresh]').addBack('[data-xhr-refresh]').not('[data-page-container] [data-xhr-refresh]').get();
 
       var items = itemsToRefresh.filter(function (el) {

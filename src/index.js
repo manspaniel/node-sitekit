@@ -558,7 +558,6 @@ class Site extends EventEmitter {
   }
 
   getRefreshes(target){
-    console.log(target)
     const itemsToRefresh = target.find('[data-xhr-refresh]').addBack( '[data-xhr-refresh]' ).not('[data-page-container] [data-xhr-refresh]').get()
 
     const items = itemsToRefresh.filter(el => {

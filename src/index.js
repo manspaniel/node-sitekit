@@ -59,7 +59,7 @@ class Site extends EventEmitter {
 			background-repeat:no-repeat;
 			background-position:center;
     `
-		console.log('%c\n', style, '\nSite by ED.\nhttps://ed.com.au');
+		console.log('%c\0', style, '\nSite by ED.\nhttps://ed.com.au');
 
     this.$ = jQuery
     this.preloadedImages = []
@@ -791,7 +791,7 @@ class Site extends EventEmitter {
 			this.emit(this.EVENTS.XHR_LOAD_MIDDLE)
 
 			var finalize = () => {
-				this.emit(this.EVENTS.XHR_LOAD_END)
+				this.emit( this.EVENTS.XHR_LOAD_END, response )
 
 				// Grab the page title
 				var title = result.find("title").html()

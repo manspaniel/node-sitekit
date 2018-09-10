@@ -1833,7 +1833,7 @@ return $.widget;
   // toMS('fast') => $.fx.speeds[i] => "200ms"
   // toMS('normal') //=> $.fx.speeds._default => "400ms"
   // toMS(10) //=> '10ms'
-  // toMS('100ms') //=> '100ms'  
+  // toMS('100ms') //=> '100ms'
   //
   function toMS(duration) {
     var i = duration;
@@ -12110,6 +12110,8 @@ return jQuery;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -13120,31 +13122,62 @@ var Site = function (_EventEmitter) {
             })]).then(next);
           }, function (next) {
             _this10.transitionWidgetsOut(oldContent, oldPageState, _this10.pageState, true, next);
-          }, async function (next) {
-            // Set up links and widgets
-            swapMenus();
-            newContent.show();
-            _this10.forceResizeWindow();
-            _this10.handleXHRLinks(newContent);
-            newContent.hide();
+          }, function () {
+            var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(next) {
+              var delayOrPromise;
+              return regeneratorRuntime.wrap(function _callee$(_context) {
+                while (1) {
+                  switch (_context.prev = _context.next) {
+                    case 0:
+                      // Set up links and widgets
+                      swapMenus();
+                      newContent.show();
+                      _this10.forceResizeWindow();
+                      _this10.handleXHRLinks(newContent);
+                      newContent.hide();
 
-            // Perform the swap!
-            _this10.emit(_this10.EVENTS.XHR_WILL_SWAP_CONTENT);
-            var delayOrPromise = _this10.xhrOptions.widgetTransitionDelay;
-            delayOrPromise = _this10.xhrOptions.swapContent(_this10.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward",
+                      // Perform the swap!
+                      _this10.emit(_this10.EVENTS.XHR_WILL_SWAP_CONTENT);
+                      delayOrPromise = _this10.xhrOptions.widgetTransitionDelay;
 
-            // NEW: Everything after newContent is now in an Object
-            {
-              refreshes: refreshes
-            }) || delay;
+                      delayOrPromise = _this10.xhrOptions.swapContent(_this10.XHRPageContainer, oldContent, newContent, dontPush ? "back" : "forward",
 
-            if (typeof delayOrPromise === 'number') {
-              await wait(delayOrPromise);
-            } else {
-              await delayOrPromise;
-            }
-            next();
-          }, function (next) {
+                      // NEW: Everything after newContent is now in an Object
+                      {
+                        refreshes: refreshes
+                      }) || delay;
+
+                      if (!(typeof delayOrPromise === 'number')) {
+                        _context.next = 13;
+                        break;
+                      }
+
+                      _context.next = 11;
+                      return wait(delayOrPromise);
+
+                    case 11:
+                      _context.next = 15;
+                      break;
+
+                    case 13:
+                      _context.next = 15;
+                      return delayOrPromise;
+
+                    case 15:
+                      next();
+
+                    case 16:
+                    case "end":
+                      return _context.stop();
+                  }
+                }
+              }, _callee, _this10);
+            }));
+
+            return function (_x2) {
+              return _ref.apply(this, arguments);
+            };
+          }(), function (next) {
             _this10.emit(_this10.EVENTS.XHR_WILL_TRANSITION_WIDGETS_IN);
 
             if (_this10.xhrOptions.autoScrollRestore) _this10.restoreScroll();

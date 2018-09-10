@@ -10,7 +10,15 @@ function transpile() {
     standalone: "sitekit"
   })
     .transform(babelify.configure({
-      presets: ["es2015"]
+      presets: [["env", {
+        targets: {
+          "browsers": [
+            "last 2 versions",
+            "ie >= 9"
+          ]
+        },
+        "useBuiltIns": true
+      }]]
     }))
     .bundle()
     .pipe(fs.createWriteStream(path.resolve(__dirname, '../dist/bundle.js')));
@@ -21,4 +29,4 @@ transpile();
 if(process.argv.indexOf("--watch") > -1) {
   console.log("Watching for changes in 'src' directory...");
   gulpWatch("./src/**/*", transpile);
-} 
+}

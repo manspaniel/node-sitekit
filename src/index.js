@@ -338,7 +338,7 @@ class Site extends EventEmitter {
       // Replaces the protected prop with a function that sequentially calls
       // the protected prop on all extensions
       result[key] = function(...args){
-        
+
         if ( typeof self[key] === 'function' ) self[key].apply(this, args)
         mixins
           .forEach(mixin => {
@@ -574,7 +574,7 @@ class Site extends EventEmitter {
 
     return items
   }
-  
+
   doRefreshes(result){
     const $page = this.XHRPageContainer.parent().children().not( '[data-page-container]' )
     const swapping = []
@@ -589,7 +589,7 @@ class Site extends EventEmitter {
     }
 
     const copyAttributes = (from, to) => {
-      const attr = Array.prototype.slice.call( from.prop( 'attributes' ) ) 
+      const attr = Array.prototype.slice.call( from.prop( 'attributes' ) )
       attr.forEach(attr => {
         to.attr( attr.name, from.attr( attr.name ) )
       })
@@ -622,7 +622,7 @@ class Site extends EventEmitter {
 
     this.getRefreshes( result )
     .forEach( item => {
-      
+
       if ( swapping.find( swapped => swapped[1] === item ) ) {
         // Already swapping this item... ignore
         return
@@ -660,7 +660,7 @@ class Site extends EventEmitter {
         $items: $( entering )
       }
     }
-    
+
     return returnVal
 
   }
@@ -670,9 +670,9 @@ class Site extends EventEmitter {
     const { state } = history
 
     if(state && typeof state.scrollY === 'number' && !state.dontAutoScroll){
-      
+
       this.emit(this.EVENTS.XHR_WILL_SCROLL_TO_PREV_POSITION)
-      
+
       if ( typeof fn === 'function' ) {
         return fn(state)
       } else {
@@ -751,7 +751,7 @@ class Site extends EventEmitter {
 				}
 			}
     }
-    
+
     const scrollToSave = this.generateReplaceState()
 
     if(this.xhrOptions.scrollAnimation) {
@@ -919,10 +919,10 @@ class Site extends EventEmitter {
 
           // Replace the last state just before move on
           history.replaceState(
-            clone(history.state, scrollToSave), 
+            clone(history.state, scrollToSave),
             null
           )
-          
+
           // Move on
 					history.pushState(
 						{},
@@ -962,8 +962,8 @@ class Site extends EventEmitter {
             this.emit(this.EVENTS.XHR_WILL_SWAP_CONTENT)
 						var delayOrPromise = this.xhrOptions.widgetTransitionDelay
 						delayOrPromise = this.xhrOptions.swapContent(
-              this.XHRPageContainer, 
-              oldContent, 
+              this.XHRPageContainer,
+              oldContent,
               newContent,
               dontPush ? "back" : "forward",
 
@@ -972,7 +972,7 @@ class Site extends EventEmitter {
                 refreshes,
               }
             ) || delay
-            
+
             if ( typeof delayOrPromise === 'number') {
               await wait(delayOrPromise)
             } else {
@@ -982,7 +982,7 @@ class Site extends EventEmitter {
 					},
 					(next) => {
             this.emit(this.EVENTS.XHR_WILL_TRANSITION_WIDGETS_IN)
-            
+
             if ( this.xhrOptions.autoScrollRestore ) this.restoreScroll()
 
 						this.transitionWidgetsIn(newContent, this.pageState, oldPageState, next)

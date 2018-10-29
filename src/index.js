@@ -769,8 +769,8 @@ class Site extends EventEmitter {
 			}
 			this.emit(this.EVENTS.XHR_TRANSITIONING_OUT)
 			// Alter the response to keep the body tag
-			response = response.replace(/(<\/?)body/g, '$1bodyfake')
-			response = response.replace(/(<\/?)head/g, '$1headfake')
+			response = response.replace(/(<\/?)body([^a-z])/g, '$1bodyfake$2')
+			response = response.replace(/(<\/?)head([^a-z])/g, '$1headfake$2')
 
 			// Convert the text response to DOM structure
 			var result = $("<div>"+response+"</div>")

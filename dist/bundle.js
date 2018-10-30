@@ -1833,7 +1833,7 @@ return $.widget;
   // toMS('fast') => $.fx.speeds[i] => "200ms"
   // toMS('normal') //=> $.fx.speeds._default => "400ms"
   // toMS(10) //=> '10ms'
-  // toMS('100ms') //=> '100ms'
+  // toMS('100ms') //=> '100ms'  
   //
   function toMS(duration) {
     var i = duration;
@@ -12186,7 +12186,7 @@ var Site = function (_EventEmitter) {
 
     var size = 40;
     var style = "\n\t\t\tfont-size: 1px;\n\t\t\tline-height:" + size * .5 + "px;padding:" + size * .25 + "px " + size * .5 + "px;\n\t\t\tbackground-size: " + size + "px " + size * .75 + "px;\n\t\t\tbackground-image: url(\"data:image/svg+xml;charset=UTF-8,%3csvg class='header-logo' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' viewBox='0 0 84 45' enable-background='new 0 0 84 45' xml:space='preserve'%3e%3cstyle%3e %23ED_Logo%7btransition: transform 0.3s;%7d %23ED_Logo:hover%7btransform: scale(1.1);%7d %3c/style%3e%3cg id='ED_Logo'%3e%3cg%3e%3cpath d='M11.4,34.4h19.2V45H0V0h30.6v10.6H11.4v6.6h18.8v10.7H11.4V34.4z'%3e%3c/path%3e%3cpath d='M51.1,0c15.3,0,23,11.3,23,22.6c0,11.2-7.7,22.4-23,22.4H33.6V0H51.1z M51.1,34.5c7.8,0,11.8-6,11.8-12 c0-5.9-4-12.2-11.8-12.2h-6.2v24.1C44.9,34.5,48.2,34.5,51.1,34.5z'%3e%3c/path%3e%3cpath d='M84,39.3c0,2.8-2.6,5.7-6.2,5.7c-3.3,0-6-2.9-6-5.7c0-3.4,2.7-5.7,6-5.7C81.4,33.6,84,35.9,84,39.3z'%3e%3c/path%3e%3c/g%3e%3c/g%3e%3c/svg%3e\");\n\t\t\tbackground-repeat:no-repeat;\n\t\t\tbackground-position:center;\n    ";
-    console.log('%c\n', style, '\nSite by ED.\nhttps://ed.com.au');
+    console.log('%c\0', style, '\nSite by ED.\nhttps://ed.com.au');
 
     _this.$ = jQuery;
     _this.preloadedImages = [];
@@ -13545,6 +13545,9 @@ var baseWidget = {
     return this;
   }
 };
+
+Site.$ = $;
+Site.jQuery = jQuery;
 
 module.exports = Site;
 

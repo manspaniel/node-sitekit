@@ -674,14 +674,16 @@ class Site extends EventEmitter {
       this.emit(this.EVENTS.XHR_WILL_SCROLL_TO_PREV_POSITION)
 
       if ( typeof fn === 'function' ) {
-        return fn(state)
+        return new Promise(resolve => resolve(fn(state)))
       } else {
         return new Promise( resolve => {
           window.scrollTo(0, state.scrollY)
-          resolve()
+          resolve(true)
         } )
       }
 
+    } else {
+      return new Promise(resolve => resolve(false))
     }
 
   }
@@ -1332,4 +1334,8 @@ const baseWidget = {
   }
 }
 
-module.exports = Site;
+// Add static properties to the Site definition
+Site.$ = $
+Site.jQuery = jQuery
+
+module.exports = Site

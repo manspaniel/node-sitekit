@@ -760,7 +760,7 @@ class Site extends EventEmitter {
   		})
     }
 
-		this.emit(this.EVENTS.XHR_LOAD_START)
+		this.emit(this.EVENTS.XHR_LOAD_START, dontPush)
 
 		this.getContent(originalURL, (response, textStatus) => {
 			if(requestID !== this.XHRRequestCounter) {
@@ -969,9 +969,9 @@ class Site extends EventEmitter {
 
               // NEW: Everything after newContent is now in an Object
               {
-                refreshes,
+                refreshes
               }
-            ) || delay
+            )
 
             if ( typeof delayOrPromise === 'number') {
               await wait(delayOrPromise)

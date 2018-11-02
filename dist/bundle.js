@@ -13027,6 +13027,8 @@ var Site = function (_EventEmitter) {
 
                 var existingItems = el.find("li");
 
+                console.log("SWAPPING", el[0], item);
+
                 if (existingItems.length) {
                   $(item).find("li").each(function (k, li) {
                     existingItems[k].className = li.className;

@@ -835,6 +835,8 @@ class Site extends EventEmitter {
 
               var existingItems = el.find("li")
 
+              console.log("SWAPPING", el[0], item)
+
               if(existingItems.length) {
                 $(item).find("li").each((k, li) => {
                   existingItems[k].className = li.className

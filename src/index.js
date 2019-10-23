@@ -307,7 +307,7 @@ class Site extends EventEmitter {
           el[widget.name](options)
           let instance = el[widget.name]('instance')
 
-          instances.push(instances)
+          instances.push(instance)
 
           // Save it to the components object
           if (widget.identifier) {

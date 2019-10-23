@@ -13,7 +13,7 @@ function transpile() {
     standalone: 'sitekit'
   });
 
-  if (!isWatch) b = b.plugin('tinyify');
+  // if (!isWatch) b = b.plugin('tinyify');
 
   b.transform(
     babelify.configure({

@@ -12267,7 +12267,7 @@ var Site = function (_EventEmitter) {
       if (this._domReadyCalled) return;
       this._domReadyCalled = true;
 
-      this.pageState = $("pagestate").data('state');
+      this.pageState = $("pagestate:last").data('state');
       this.initWidgets();
       this.initXHRPageSystem();
       this.preloadWidgets($(document.body), function () {
@@ -12406,6 +12406,7 @@ var Site = function (_EventEmitter) {
       var _this3 = this;
 
       targetEl = $(targetEl || document.body);
+      var instances = [];
 
       // Look for uninitialized widgets
       targetEl.find("[data-widget]").each(function (k, thisEl) {
@@ -12448,6 +12449,8 @@ var Site = function (_EventEmitter) {
             el[widget.name](options);
             var instance = el[widget.name]('instance');
 
+            instances.push(instances);
+
             // Save it to the components object
             if (widget.identifier) {
               _this3.components[widget.identifier] = instance;
@@ -12463,24 +12466,17 @@ var Site = function (_EventEmitter) {
         $.data(thisEl, 'widgetNames', widgetNames);
       });
 
-      this.emit(this.EVENTS.AFTER_WIDGETS_INIT);
-    }
-  }, {
-    key: "reportError",
-    value: function reportError() {
-      for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-        args[_key4] = arguments[_key4];
-      }
-
       var _iteratorNormalCompletion = true;
       var _didIteratorError = false;
       var _iteratorError = undefined;
 
       try {
-        for (var _iterator = args[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var arg = _step.value;
+        for (var _iterator = instances[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var inst = _step.value;
 
-          console.error(arg);
+          if (inst._ready) {
+            inst._ready();
+          }
         }
       } catch (err) {
         _didIteratorError = true;
@@ -12493,6 +12489,40 @@ var Site = function (_EventEmitter) {
         } finally {
           if (_didIteratorError) {
             throw _iteratorError;
+          }
+        }
+      }
+
+      this.emit(this.EVENTS.AFTER_WIDGETS_INIT);
+    }
+  }, {
+    key: "reportError",
+    value: function reportError() {
+      for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+        args[_key4] = arguments[_key4];
+      }
+
+      var _iteratorNormalCompletion2 = true;
+      var _didIteratorError2 = false;
+      var _iteratorError2 = undefined;
+
+      try {
+        for (var _iterator2 = args[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+          var arg = _step2.value;
+
+          console.error(arg);
+        }
+      } catch (err) {
+        _didIteratorError2 = true;
+        _iteratorError2 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion2 && _iterator2.return) {
+            _iterator2.return();
+          }
+        } finally {
+          if (_didIteratorError2) {
+            throw _iteratorError2;
           }
         }
       }
@@ -12931,7 +12961,7 @@ var Site = function (_EventEmitter) {
       for (var k in allWidgets) {
         var widget = allWidgets[k];
         if (widget && widget.xhrPageWillLoad) {
-          var result = widget.xhrPageWillLoad(urlPath, url);
+          var result = widget.xhrPageWillLoad(urlPath, url, dontPush ? 'back' : 'forward');
           if (result === false) {
             history.pushState({}, null, originalURL);
             if (window.ga) {
@@ -12998,7 +13028,7 @@ var Site = function (_EventEmitter) {
           bodyClass = _this10.xhrOptions.filterBodyClasses(document.body.className, bodyClass);
 
           var oldPageState = _this10.pageState;
-          _this10.pageState = result.find("pagestate").data('state');
+          _this10.pageState = result.add(newContent).find("pagestate:last").data('state');
 
           // Look for gravity forms scripts in the footer
           // result.find("script").each((k, el) => {
@@ -13026,8 +13056,6 @@ var Site = function (_EventEmitter) {
                 var el = $('#' + id);
 
                 var existingItems = el.find("li");
-
-                console.log("SWAPPING", el[0], item);
 
                 if (existingItems.length) {
                   $(item).find("li").each(function (k, li) {
@@ -13152,7 +13180,9 @@ var Site = function (_EventEmitter) {
 
                       // NEW: Everything after newContent is now in an Object
                       {
-                        refreshes: refreshes
+                        refreshes: refreshes,
+                        toPage: _this10.pageState,
+                        fromPage: oldPageState
                       });
 
                       if (!(typeof delayOrPromise === 'number')) {
@@ -13298,13 +13328,13 @@ var Site = function (_EventEmitter) {
 
       var widgets = this.getAllWidgets(targetEl);
 
-      var _iteratorNormalCompletion2 = true;
-      var _didIteratorError2 = false;
-      var _iteratorError2 = undefined;
+      var _iteratorNormalCompletion3 = true;
+      var _didIteratorError3 = false;
+      var _iteratorError3 = undefined;
 
       try {
-        for (var _iterator2 = widgets[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-          var widget = _step2.value;
+        for (var _iterator3 = widgets[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+          var widget = _step3.value;
 
           foundTransition = true;
           if (widget._transitionOut) {
@@ -13316,16 +13346,16 @@ var Site = function (_EventEmitter) {
           }
         }
       } catch (err) {
-        _didIteratorError2 = true;
-        _iteratorError2 = err;
+        _didIteratorError3 = true;
+        _iteratorError3 = err;
       } finally {
         try {
-          if (!_iteratorNormalCompletion2 && _iterator2.return) {
-            _iterator2.return();
+          if (!_iteratorNormalCompletion3 && _iterator3.return) {
+            _iterator3.return();
           }
         } finally {
-          if (_didIteratorError2) {
-            throw _iteratorError2;
+          if (_didIteratorError3) {
+            throw _iteratorError3;
           }
         }
       }

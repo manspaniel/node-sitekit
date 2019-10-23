@@ -134,7 +134,7 @@ class Site extends EventEmitter {
     if (this._domReadyCalled) return
     this._domReadyCalled = true
 
-    this.pageState = $("pagestate").data('state')
+    this.pageState = $("pagestate:last").data('state')
     this.initWidgets()
     this.initXHRPageSystem()
     this.preloadWidgets($(document.body), () => {
@@ -260,6 +260,7 @@ class Site extends EventEmitter {
   initWidgets(targetEl) {
 
     targetEl = $(targetEl || document.body)
+    const instances = []
 
     // Look for uninitialized widgets
     targetEl.find("[data-widget]").each((k, thisEl) => {
@@ -302,6 +303,8 @@ class Site extends EventEmitter {
           el[widget.name](options)
           let instance = el[widget.name]('instance')
 
+          instances.push(instances)
+
           // Save it to the components object
           if(widget.identifier) {
             this.components[widget.identifier] = instance
@@ -318,6 +321,12 @@ class Site extends EventEmitter {
       $.data(thisEl, 'widgetNames', widgetNames)
 
     })
+
+    for (const inst of instances) {
+      if (inst._ready) {
+        inst._ready()
+      }
+    }
 
     this.emit(this.EVENTS.AFTER_WIDGETS_INIT)
 
@@ -739,7 +748,7 @@ class Site extends EventEmitter {
 		for(var k in allWidgets) {
 			var widget = allWidgets[k]
 			if(widget && widget.xhrPageWillLoad) {
-				var result = widget.xhrPageWillLoad(urlPath, url)
+				var result = widget.xhrPageWillLoad(urlPath, url, dontPush ? 'back' : 'forward')
 				if(result === false) {
 					history.pushState({}, null, originalURL)
           if(window.ga) {
@@ -806,7 +815,7 @@ class Site extends EventEmitter {
 				bodyClass = this.xhrOptions.filterBodyClasses(document.body.className, bodyClass)
 
 				var oldPageState = this.pageState
-				this.pageState = result.find("pagestate").data('state')
+				this.pageState = result.add(newContent).find("pagestate:last").data('state')
 
         // Look for gravity forms scripts in the footer
         // result.find("script").each((k, el) => {
@@ -834,8 +843,6 @@ class Site extends EventEmitter {
               var el = $('#'+id)
 
               var existingItems = el.find("li")
-
-              console.log("SWAPPING", el[0], item)
 
               if(existingItems.length) {
                 $(item).find("li").each((k, li) => {
@@ -973,7 +980,9 @@ class Site extends EventEmitter {
 
               // NEW: Everything after newContent is now in an Object
               {
-                refreshes
+                refreshes,
+                toPage: this.pageState,
+                fromPage: oldPageState
               }
             )
 

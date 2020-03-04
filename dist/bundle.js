@@ -13662,7 +13662,7 @@ function (_EventEmitter) {
                 trackerName = ga.getAll()[0].a.data.values[':name'];
               } catch (err) {}
 
-              ga(trackerName ? trackername + '.send' : 'send', {
+              ga(trackerName ? trackerName + '.send' : 'send', {
                 hitType: 'pageview',
                 page: location.pathname
               });

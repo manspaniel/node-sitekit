@@ -136,7 +136,7 @@ class Site extends EventEmitter {
     if (this._domReadyCalled) return
     this._domReadyCalled = true
 
-    this.pageState = $("pagestate:last").data('state')
+    this.pageState = $('pagestate:last').data('state')
     this.initWidgets()
     this.initXHRPageSystem()
     this.preloadWidgets($(document.body), () => {
@@ -743,16 +743,20 @@ class Site extends EventEmitter {
 
     this.lastURL = url
 
-		// See if any widgets want to intercept this request instead
-		var allWidgets = this.getAllWidgets()
-		var urlPath = url.replace(/\#.+$/, '').match(/:\/\/[^\/]+(.*)/)
-		for(var k in allWidgets) {
-			var widget = allWidgets[k]
-			if(widget && widget.xhrPageWillLoad) {
-				var result = widget.xhrPageWillLoad(urlPath, url, dontPush ? 'back' : 'forward')
-				if(result === false) {
-					history.pushState({}, null, originalURL)
-          if(window.ga) {
+    // See if any widgets want to intercept this request instead
+    var allWidgets = this.getAllWidgets()
+    var urlPath = url.replace(/\#.+$/, '').match(/:\/\/[^\/]+(.*)/)
+    for (var k in allWidgets) {
+      var widget = allWidgets[k]
+      if (widget && widget.xhrPageWillLoad) {
+        var result = widget.xhrPageWillLoad(
+          urlPath,
+          url,
+          dontPush ? 'back' : 'forward'
+        )
+        if (result === false) {
+          history.pushState({}, null, originalURL)
+          if (window.ga) {
             // Inform Google Analytics
             ga('send', {
               hitType: 'pageview',
@@ -829,8 +833,11 @@ class Site extends EventEmitter {
           bodyClass
         )
 
-				var oldPageState = this.pageState
-				this.pageState = result.add(newContent).find("pagestate:last").data('state')
+        var oldPageState = this.pageState
+        this.pageState = result
+          .add(newContent)
+          .find('pagestate:last')
+          .data('state')
 
         // Look for gravity forms scripts in the footer
         // result.find("script").each((k, el) => {
@@ -942,7 +949,11 @@ class Site extends EventEmitter {
           history.pushState({}, title, originalURL)
           if (window.ga) {
             // Inform Google Analytics
-            ga('send', {
+            let trackerName = ''
+            try {
+              trackerName = ga.getAll()[0].a.data.values[':name']
+            } catch (err) {}
+            ga(trackerName ? trackername + '.send' : 'send', {
               hitType: 'pageview',
               page: location.pathname,
             })
@@ -988,7 +999,7 @@ class Site extends EventEmitter {
               {
                 refreshes,
                 toPage: this.pageState,
-                fromPage: oldPageState
+                fromPage: oldPageState,
               }
             )
 

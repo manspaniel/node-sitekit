@@ -12842,7 +12842,7 @@ function (_EventEmitter) {
 
       if (this._domReadyCalled) return;
       this._domReadyCalled = true;
-      this.pageState = $("pagestate:last").data('state');
+      this.pageState = $('pagestate:last').data('state');
       this.initWidgets();
       this.initXHRPageSystem();
       this.preloadWidgets($(document.body), function () {
@@ -13547,7 +13547,7 @@ function (_EventEmitter) {
           var bodyClass = result.find('bodyfake').attr('class');
           bodyClass = _this10.xhrOptions.filterBodyClasses(document.body.className, bodyClass);
           var oldPageState = _this10.pageState;
-          _this10.pageState = result.add(newContent).find("pagestate:last").data('state'); // Look for gravity forms scripts in the footer
+          _this10.pageState = result.add(newContent).find('pagestate:last').data('state'); // Look for gravity forms scripts in the footer
           // result.find("script").each((k, el) => {
           //   if(!el.getAttribute('src') && el.innerHTML.indexOf("var gf_global")) {
           //

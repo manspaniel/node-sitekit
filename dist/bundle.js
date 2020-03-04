@@ -13656,7 +13656,13 @@ function (_EventEmitter) {
 
             if (window.ga) {
               // Inform Google Analytics
-              ga('send', {
+              var trackerName = '';
+
+              try {
+                trackerName = ga.getAll()[0].a.data.values[':name'];
+              } catch (err) {}
+
+              ga(trackerName ? trackername + '.send' : 'send', {
                 hitType: 'pageview',
                 page: location.pathname
               });

@@ -1412,8 +1412,9 @@ interface BaseWidget<El, T> {
   _transitionOut?(this: T & ThisOverload<El>): Promise<any> | number
   _destroy?(this: T & ThisOverload<El>): any
   _ready?(this: T & ThisOverload<El>): any
-  _preloadWidget?(next: () => any): Promise<any>
+  _preloadWidget?(this: T & ThisOverload<El>, next: () => any): Promise<any>
   xhrPageWillLoad?(
+    this: T & ThisOverload<El>,
     urlPath: string,
     url: string,
     direction: 'back' | 'forward'

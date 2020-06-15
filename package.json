@@ -30,9 +30,7 @@
     "core-js": "^3.6.5",
     "rollup-plugin-analyzer": "^3.2.3",
     "rollup-plugin-terser": "^6.1.0",
-    "rollup-plugin-visualizer": "^4.0.4"
-  },
-  "peerDependencies": {
+    "rollup-plugin-visualizer": "^4.0.4",
     "jquery": "^3.4.0",
     "jquery-ui": "^1.12.1",
     "jquery.transit": "^0.9.12"
@@ -49,9 +47,6 @@
     "babelify": "^10.0.0",
     "browserify": "^16.2.3",
     "gulp-watch": "^5.0.1",
-    "jquery": "^3.4.0",
-    "jquery-ui": "^1.12.1",
-    "jquery.transit": "^0.9.12",
     "rollup": "^2.16.1",
     "rollup-plugin-styles": "^3.8.2",
     "tinyify": "^2.5.0"

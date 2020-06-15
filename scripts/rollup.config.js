@@ -6,6 +6,7 @@ import styles from 'rollup-plugin-styles'
 import babel from '@rollup/plugin-babel'
 import replace from '@rollup/plugin-replace'
 import { existsSync } from 'fs'
+import analyze from 'rollup-plugin-visualizer'
 
 function dirName(path) {
   let parts = path.split('/')
@@ -18,7 +19,7 @@ function dirName(path) {
 const extensions = ['.js', '.jsx', '.ts', '.tsx']
 
 let modes = ['development', 'test', 'production']
-export const config = (mode = 'development') => {
+export const config = async (mode = 'development') => {
   if (!modes.includes(mode)) {
     throw Error(`Please use on of ${modes.join(' | ')}`)
   }
@@ -28,6 +29,7 @@ export const config = (mode = 'development') => {
   )
 
   process.env.NODE_ENV = mode
+  process.env.BUILD === mode
 
   let finalConfig = {
     input: entry,
@@ -57,7 +59,13 @@ export const config = (mode = 'development') => {
         babelHelpers: 'runtime',
         extensions,
         babelrc: false,
-        presets: ['@babel/env', '@babel/typescript'],
+        presets: [
+          [
+            '@babel/env',
+            { targets: { browsers: ['last 2 versions', 'not ie > 0'] } },
+          ],
+          '@babel/typescript',
+        ],
         plugins: [
           [
             '@babel/plugin-transform-runtime',
@@ -70,6 +78,8 @@ export const config = (mode = 'development') => {
         include: ['src/**/*'],
         exclude: ['node_modules'],
       }),
+      mode === 'production' && (await import('rollup-plugin-terser')).terser(),
+      mode === 'production' && analyze(),
     ],
   }
 

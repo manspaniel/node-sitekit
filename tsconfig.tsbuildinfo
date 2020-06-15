@@ -130,12 +130,40 @@
         "signature": "a1205f8b74ba57896ae4eb9ff19a5ffc7f210352b0b535abcd36d6b06225a3ac"
       },
       "./src/index.ts": {
-        "version": "8592918e1b82b0eca9ecbcf07e28690025580cd300b24d20a5a8e0c07d6b98a3",
-        "signature": "6fb9f4a006d320b1f2e6a35420e9aa55ede247fd9257dda2b50737d2fbc9b0a1"
+        "version": "360ae50602def360539d857e8ee5c578e32c15a05f5305345b83b67108c8074a",
+        "signature": "59ad69751e8b32794c744cf989d23933ccb203fc08c2d9e1a85ab70a523f4a01"
+      },
+      "./node_modules/@types/color-name/index.d.ts": {
+        "version": "f0cb4b3ab88193e3e51e9e2622e4c375955003f1f81239d72c5b7a95415dad3e",
+        "signature": "f0cb4b3ab88193e3e51e9e2622e4c375955003f1f81239d72c5b7a95415dad3e"
       },
       "./node_modules/@types/estree/index.d.ts": {
         "version": "89ccbe04e737ce613f5f04990271cfa84901446350b8551b0555ddf19319723b",
         "signature": "89ccbe04e737ce613f5f04990271cfa84901446350b8551b0555ddf19319723b"
+      },
+      "./node_modules/@types/jquery/jquerystatic.d.ts": {
+        "version": "2a19c7dd007f71b9db87dba915e20d894dbdac8aa8fab5d1c3083a61f2316a5c",
+        "signature": "2a19c7dd007f71b9db87dba915e20d894dbdac8aa8fab5d1c3083a61f2316a5c"
+      },
+      "./node_modules/@types/jquery/jquery.d.ts": {
+        "version": "3ea0e1446b84ad60e76c41d5ab06d923b929043f885e28321520ed18aa70cddb",
+        "signature": "3ea0e1446b84ad60e76c41d5ab06d923b929043f885e28321520ed18aa70cddb"
+      },
+      "./node_modules/@types/jquery/misc.d.ts": {
+        "version": "b3907b2c4c8ccd6100c20a4691a9509df2867e5346154358eab40f8e037271bc",
+        "signature": "b3907b2c4c8ccd6100c20a4691a9509df2867e5346154358eab40f8e037271bc"
+      },
+      "./node_modules/@types/jquery/legacy.d.ts": {
+        "version": "8c4a3355af2c490a8af67c4ec304e970424a15ef648a3c3fbb3ee6634461e2cc",
+        "signature": "8c4a3355af2c490a8af67c4ec304e970424a15ef648a3c3fbb3ee6634461e2cc"
+      },
+      "./node_modules/@types/sizzle/index.d.ts": {
+        "version": "7ddac8a4ba398441cfd6d8a69380401378f122ee8cc2d848e6e32f4db2b6c876",
+        "signature": "7ddac8a4ba398441cfd6d8a69380401378f122ee8cc2d848e6e32f4db2b6c876"
+      },
+      "./node_modules/@types/jquery/index.d.ts": {
+        "version": "2f7f24e566d3029aa802876b4452ae7d8a4ae21a44cefe4767c3986e06b69fc4",
+        "signature": "2f7f24e566d3029aa802876b4452ae7d8a4ae21a44cefe4767c3986e06b69fc4"
       },
       "./node_modules/@types/node/globals.d.ts": {
         "version": "2dd7dbacbd70cc156185235140b7b6682c002c1ea678dd87d7a20589d4555fc0",
@@ -371,6 +399,7 @@
       "target": 3,
       "rootDir": "./src",
       "emitDeclarationOnly": true,
+      "watch": true,
       "configFilePath": "./tsconfig.json"
     },
     "referencedMap": {
@@ -572,7 +601,54 @@
         "./node_modules/@types/node/util.d.ts",
         "./node_modules/@types/node/ts3.2/util.d.ts"
       ],
+      "./node_modules/@types/color-name/index.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
       "./node_modules/@types/estree/index.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/jquery/jquerystatic.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/jquery/jquery.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/jquery/misc.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/jquery/legacy.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/sizzle/index.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/jquery/index.d.ts": [
+        "./node_modules/@types/jquery/jquerystatic.d.ts",
+        "./node_modules/@types/jquery/jquery.d.ts",
+        "./node_modules/@types/jquery/misc.d.ts",
+        "./node_modules/@types/jquery/legacy.d.ts",
+        "./node_modules/@types/sizzle/index.d.ts",
         "./node_modules/@types/node/fs.d.ts",
         "./node_modules/@types/node/ts3.2/fs.d.ts",
         "./node_modules/@types/node/util.d.ts",
@@ -1201,6 +1277,47 @@
         "./node_modules/@types/node/util.d.ts",
         "./node_modules/@types/node/ts3.2/util.d.ts"
       ],
+      "./node_modules/@types/jquery/jquerystatic.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/jquery/jquery.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/jquery/misc.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/jquery/legacy.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/sizzle/index.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/jquery/index.d.ts": [
+        "./node_modules/@types/jquery/jquerystatic.d.ts",
+        "./node_modules/@types/jquery/jquery.d.ts",
+        "./node_modules/@types/jquery/misc.d.ts",
+        "./node_modules/@types/jquery/legacy.d.ts",
+        "./node_modules/@types/sizzle/index.d.ts",
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
       "./node_modules/@types/node/globals.d.ts": [
         "./node_modules/@types/node/fs.d.ts",
         "./node_modules/@types/node/ts3.2/fs.d.ts",
@@ -1623,6 +1740,12 @@
         "./node_modules/@types/node/ts3.2/fs.d.ts",
         "./node_modules/@types/node/util.d.ts",
         "./node_modules/@types/node/ts3.2/util.d.ts"
+      ],
+      "./node_modules/@types/color-name/index.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/util.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts"
       ]
     },
     "semanticDiagnosticsPerFile": [
@@ -1658,61 +1781,6 @@
       "../../../../usr/local/lib/node_modules/typescript/lib/lib.es2020.bigint.d.ts",
       "../../../../usr/local/lib/node_modules/typescript/lib/lib.esnext.intl.d.ts",
       "../../../../usr/local/lib/node_modules/typescript/lib/lib.es2016.full.d.ts",
-      "./node_modules/@types/estree/index.d.ts",
-      "./node_modules/@types/node/globals.d.ts",
-      "./node_modules/@types/node/async_hooks.d.ts",
-      "./node_modules/@types/node/buffer.d.ts",
-      "./node_modules/@types/node/child_process.d.ts",
-      "./node_modules/@types/node/cluster.d.ts",
-      "./node_modules/@types/node/console.d.ts",
-      "./node_modules/@types/node/constants.d.ts",
-      "./node_modules/@types/node/crypto.d.ts",
-      "./node_modules/@types/node/dgram.d.ts",
-      "./node_modules/@types/node/dns.d.ts",
-      "./node_modules/@types/node/domain.d.ts",
-      "./node_modules/@types/node/events.d.ts",
-      "./node_modules/@types/node/fs.d.ts",
-      "./node_modules/@types/node/fs/promises.d.ts",
-      "./node_modules/@types/node/http.d.ts",
-      "./node_modules/@types/node/http2.d.ts",
-      "./node_modules/@types/node/https.d.ts",
-      "./node_modules/@types/node/inspector.d.ts",
-      "./node_modules/@types/node/module.d.ts",
-      "./node_modules/@types/node/net.d.ts",
-      "./node_modules/@types/node/os.d.ts",
-      "./node_modules/@types/node/path.d.ts",
-      "./node_modules/@types/node/perf_hooks.d.ts",
-      "./node_modules/@types/node/process.d.ts",
-      "./node_modules/@types/node/punycode.d.ts",
-      "./node_modules/@types/node/querystring.d.ts",
-      "./node_modules/@types/node/readline.d.ts",
-      "./node_modules/@types/node/repl.d.ts",
-      "./node_modules/@types/node/stream.d.ts",
-      "./node_modules/@types/node/string_decoder.d.ts",
-      "./node_modules/@types/node/timers.d.ts",
-      "./node_modules/@types/node/tls.d.ts",
-      "./node_modules/@types/node/trace_events.d.ts",
-      "./node_modules/@types/node/tty.d.ts",
-      "./node_modules/@types/node/url.d.ts",
-      "./node_modules/@types/node/util.d.ts",
-      "./node_modules/@types/node/v8.d.ts",
-      "./node_modules/@types/node/vm.d.ts",
-      "./node_modules/@types/node/worker_threads.d.ts",
-      "./node_modules/@types/node/zlib.d.ts",
-      "./node_modules/@types/node/base.d.ts",
-      "./node_modules/@types/node/ts3.2/fs.d.ts",
-      "./node_modules/@types/node/ts3.2/util.d.ts",
-      "./node_modules/@types/node/ts3.2/globals.d.ts",
-      "./node_modules/@types/node/ts3.2/base.d.ts",
-      "./node_modules/@types/node/ts3.5/globals.global.d.ts",
-      "./node_modules/@types/node/ts3.5/wasi.d.ts",
-      "./node_modules/@types/node/ts3.5/base.d.ts",
-      "./node_modules/@types/node/ts3.7/assert.d.ts",
-      "./node_modules/@types/node/ts3.7/base.d.ts",
-      "./node_modules/@types/node/ts3.7/index.d.ts",
-      "./node_modules/@types/parse-json/index.d.ts",
-      "./node_modules/@types/q/index.d.ts",
-      "./node_modules/@types/resolve/index.d.ts",
       [
         "./src/index.ts",
         [
@@ -2021,7 +2089,69 @@
             ]
           }
         ]
-      ]
+      ],
+      "./node_modules/@types/estree/index.d.ts",
+      "./node_modules/@types/jquery/jquerystatic.d.ts",
+      "./node_modules/@types/jquery/jquery.d.ts",
+      "./node_modules/@types/jquery/misc.d.ts",
+      "./node_modules/@types/jquery/legacy.d.ts",
+      "./node_modules/@types/sizzle/index.d.ts",
+      "./node_modules/@types/jquery/index.d.ts",
+      "./node_modules/@types/node/globals.d.ts",
+      "./node_modules/@types/node/async_hooks.d.ts",
+      "./node_modules/@types/node/buffer.d.ts",
+      "./node_modules/@types/node/child_process.d.ts",
+      "./node_modules/@types/node/cluster.d.ts",
+      "./node_modules/@types/node/console.d.ts",
+      "./node_modules/@types/node/constants.d.ts",
+      "./node_modules/@types/node/crypto.d.ts",
+      "./node_modules/@types/node/dgram.d.ts",
+      "./node_modules/@types/node/dns.d.ts",
+      "./node_modules/@types/node/domain.d.ts",
+      "./node_modules/@types/node/events.d.ts",
+      "./node_modules/@types/node/fs.d.ts",
+      "./node_modules/@types/node/fs/promises.d.ts",
+      "./node_modules/@types/node/http.d.ts",
+      "./node_modules/@types/node/http2.d.ts",
+      "./node_modules/@types/node/https.d.ts",
+      "./node_modules/@types/node/inspector.d.ts",
+      "./node_modules/@types/node/module.d.ts",
+      "./node_modules/@types/node/net.d.ts",
+      "./node_modules/@types/node/os.d.ts",
+      "./node_modules/@types/node/path.d.ts",
+      "./node_modules/@types/node/perf_hooks.d.ts",
+      "./node_modules/@types/node/process.d.ts",
+      "./node_modules/@types/node/punycode.d.ts",
+      "./node_modules/@types/node/querystring.d.ts",
+      "./node_modules/@types/node/readline.d.ts",
+      "./node_modules/@types/node/repl.d.ts",
+      "./node_modules/@types/node/stream.d.ts",
+      "./node_modules/@types/node/string_decoder.d.ts",
+      "./node_modules/@types/node/timers.d.ts",
+      "./node_modules/@types/node/tls.d.ts",
+      "./node_modules/@types/node/trace_events.d.ts",
+      "./node_modules/@types/node/tty.d.ts",
+      "./node_modules/@types/node/url.d.ts",
+      "./node_modules/@types/node/util.d.ts",
+      "./node_modules/@types/node/v8.d.ts",
+      "./node_modules/@types/node/vm.d.ts",
+      "./node_modules/@types/node/worker_threads.d.ts",
+      "./node_modules/@types/node/zlib.d.ts",
+      "./node_modules/@types/node/base.d.ts",
+      "./node_modules/@types/node/ts3.2/fs.d.ts",
+      "./node_modules/@types/node/ts3.2/util.d.ts",
+      "./node_modules/@types/node/ts3.2/globals.d.ts",
+      "./node_modules/@types/node/ts3.2/base.d.ts",
+      "./node_modules/@types/node/ts3.5/globals.global.d.ts",
+      "./node_modules/@types/node/ts3.5/wasi.d.ts",
+      "./node_modules/@types/node/ts3.5/base.d.ts",
+      "./node_modules/@types/node/ts3.7/assert.d.ts",
+      "./node_modules/@types/node/ts3.7/base.d.ts",
+      "./node_modules/@types/node/ts3.7/index.d.ts",
+      "./node_modules/@types/parse-json/index.d.ts",
+      "./node_modules/@types/q/index.d.ts",
+      "./node_modules/@types/resolve/index.d.ts",
+      "./node_modules/@types/color-name/index.d.ts"
     ]
   },
   "version": "3.8.3"

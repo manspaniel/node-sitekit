@@ -1404,13 +1404,27 @@ const baseWidget = {
 Site.$ = $
 Site.jQuery = jQuery
 
-interface BaseWidget {
-  _create?(): any
-  _transitionIn?(): any
-  _transitionOut?(): any
+type ThisOverload<El> = { element: JQuery<El> }
+interface BaseWidget<El, T> {
+  use?(...mixins: any[]): any
+  _create?(this: T & ThisOverload<El>): any
+  _transitionIn?(this: T & ThisOverload<El>): Promise<any> | number
+  _transitionOut?(this: T & ThisOverload<El>): Promise<any> | number
+  _destroy?(this: T & ThisOverload<El>): any
+  _ready?(this: T & ThisOverload<El>): any
+  _preloadWidget?(next: () => any): Promise<any>
+  xhrPageWillLoad?(
+    urlPath: string,
+    url: string,
+    direction: 'back' | 'forward'
+  ): boolean
+  [k: string]: (this: T & ThisOverload<El>, ...args: any[]) => any | any
 }
 
-export function Widget<T extends BaseWidget>(name: string, def: T) {
+export function Widget<
+  El extends HTMLElement = HTMLElement,
+  T extends BaseWidget<El, T> = {}
+>(name: string, def: T) {
   return {
     isWidget: true,
     name,

@@ -24,7 +24,7 @@ const clone = (...args) => {
 }
 
 function wait(t) {
-  return new Promise(resolve => setTimeout(resolve, t))
+  return new Promise((resolve) => setTimeout(resolve, t))
 }
 
 class Site extends EventEmitter {
@@ -82,8 +82,8 @@ class Site extends EventEmitter {
       imageLoadTimeout: 3000,
       widgetTransitionDelay: 0,
       cachePages: true,
-      swapBodyClasses: newClasses =>
-        new Promise(resolve => {
+      swapBodyClasses: (newClasses) =>
+        new Promise((resolve) => {
           setTimeout(() => {
             document.body.className = newClasses
             resolve()
@@ -95,7 +95,7 @@ class Site extends EventEmitter {
         // Fade out old content
         originalContent.fadeOut({
           duration: duration / 2,
-          complete: function() {
+          complete: function () {
             // Not forgetting to remove the old content
             originalContent.remove()
 
@@ -347,9 +347,9 @@ class Site extends EventEmitter {
     return this.propsToSave().reduce((result, key) => {
       // Replaces the protected prop with a function that sequentially calls
       // the protected prop on all extensions
-      result[key] = function(...args) {
+      result[key] = function (...args) {
         if (typeof self[key] === 'function') self[key].apply(this, args)
-        mixins.forEach(mixin => {
+        mixins.forEach((mixin) => {
           if (typeof mixin[key] === 'function') {
             mixin[key].apply(this, args)
           }
@@ -362,7 +362,7 @@ class Site extends EventEmitter {
   prepWidgetExtensions(name, def) {
     const mixins = def.use
     const meta = []
-    const mixeds = mixins.map(mixin => {
+    const mixeds = mixins.map((mixin) => {
       meta.push({ name: mixin.name })
       return mixin(this, this.$, name, clone(def))
     })
@@ -370,12 +370,13 @@ class Site extends EventEmitter {
     // Warn of overwritten props
     mixeds.forEach((mix, curr) => {
       Object.keys(mix)
-        .filter(k => !this.propsToSave().includes(k))
-        .forEach(k => {
+        .filter((k) => !this.propsToSave().includes(k))
+        .forEach((k) => {
           if (def[k]) {
             console.warn(
-              `The prop ${k} will be overwritten by extension ${mixins[curr]
-                .name || curr}`
+              `The prop ${k} will be overwritten by extension ${
+                mixins[curr].name || curr
+              }`
             )
           }
           // only check mixins below this current one
@@ -387,9 +388,11 @@ class Site extends EventEmitter {
             .forEach((mixed, i) => {
               if (mixed.mix[k]) {
                 console.warn(
-                  `The prop ${k} from extension ${mixed.name ||
-                    i} will be overwritten by extension ${mixins[curr].name ||
-                    curr}`
+                  `The prop ${k} from extension ${
+                    mixed.name || i
+                  } will be overwritten by extension ${
+                    mixins[curr].name || curr
+                  }`
                 )
               }
             })
@@ -435,7 +438,7 @@ class Site extends EventEmitter {
       return
     }
 
-    var loaded = img => {
+    var loaded = (img) => {
       images.push(img)
       this.preloadedImages.push(img[0])
       if (images.length == srcs.length) {
@@ -449,7 +452,7 @@ class Site extends EventEmitter {
       }, timeout)
     }
 
-    let preloadItem = src => {
+    let preloadItem = (src) => {
       let img = $('<img>')
 
       let hasLoaded = false
@@ -549,7 +552,7 @@ class Site extends EventEmitter {
 
     var loadNext = () => {
       // Filter out pre-preloaded urls
-      this.pagePreloadQueue = this.pagePreloadQueue.filter(url => {
+      this.pagePreloadQueue = this.pagePreloadQueue.filter((url) => {
         return this.preloadedPages[url] ? false : true
       })
 
@@ -577,7 +580,7 @@ class Site extends EventEmitter {
       .not('[data-page-container] [data-xhr-refresh]')
       .get()
 
-    const items = itemsToRefresh.filter(el => {
+    const items = itemsToRefresh.filter((el) => {
       const id = $(el).attr('id')
 
       // Warn
@@ -604,21 +607,21 @@ class Site extends EventEmitter {
     const leaving = []
     const entering = []
 
-    const removeAttributes = el => {
+    const removeAttributes = (el) => {
       const attr = Array.prototype.slice.call(el.prop('attributes'))
-      attr.forEach(attr => {
+      attr.forEach((attr) => {
         el.removeAttr(attr.name)
       })
     }
 
     const copyAttributes = (from, to) => {
       const attr = Array.prototype.slice.call(from.prop('attributes'))
-      attr.forEach(attr => {
+      attr.forEach((attr) => {
         to.attr(attr.name, from.attr(attr.name))
       })
     }
 
-    this.getRefreshes($page).forEach(item => {
+    this.getRefreshes($page).forEach((item) => {
       const $item = $(item)
       const id = $item.attr('id')
       const oldKey = $item.attr('data-xhr-refresh')
@@ -642,8 +645,8 @@ class Site extends EventEmitter {
       }
     })
 
-    this.getRefreshes(result).forEach(item => {
-      if (swapping.find(swapped => swapped[1] === item)) {
+    this.getRefreshes(result).forEach((item) => {
+      if (swapping.find((swapped) => swapped[1] === item)) {
         // Already swapping this item... ignore
         return
       }
@@ -655,8 +658,8 @@ class Site extends EventEmitter {
       swapping: {
         items: swapping,
         swap: () =>
-          new Promise(resolve => {
-            swapping.forEach(item => {
+          new Promise((resolve) => {
+            swapping.forEach((item) => {
               const $item1 = $(item[0])
               const $item2 = $(item[1])
               $item1.html($($item2).html())
@@ -689,15 +692,15 @@ class Site extends EventEmitter {
       this.emit(this.EVENTS.XHR_WILL_SCROLL_TO_PREV_POSITION)
 
       if (typeof fn === 'function') {
-        return new Promise(resolve => resolve(fn(state)))
+        return new Promise((resolve) => resolve(fn(state)))
       } else {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           window.scrollTo(0, state.scrollY)
           resolve(true)
         })
       }
     } else {
-      return new Promise(resolve => resolve(false))
+      return new Promise((resolve) => resolve(false))
     }
   }
 
@@ -879,6 +882,7 @@ class Site extends EventEmitter {
               // var el = $('#'+id.replace(/\-[0-9]+/, ''))
               var el = $('#' + id).html(item.innerHTML)
               this.handleXHRLinks(el)
+              this.initWidgets(el)
             }
           })
         }
@@ -962,14 +966,16 @@ class Site extends EventEmitter {
         this.emit(this.EVENTS.XHR_WILL_TRANSITION)
         // Destroy existing widgets
         var steps = [
-          next => {
+          (next) => {
             this.initWidgets(newContent)
             Promise.race([
-              new Promise(resolve => this.preloadWidgets(newContent, resolve)),
-              new Promise(resolve => setTimeout(resolve, 6000)),
+              new Promise((resolve) =>
+                this.preloadWidgets(newContent, resolve)
+              ),
+              new Promise((resolve) => setTimeout(resolve, 6000)),
             ]).then(next)
           },
-          next => {
+          (next) => {
             this.transitionWidgetsOut(
               oldContent,
               oldPageState,
@@ -978,7 +984,7 @@ class Site extends EventEmitter {
               next
             )
           },
-          async next => {
+          async (next) => {
             // Set up links and widgets
             swapMenus()
             newContent.show()
@@ -1010,7 +1016,7 @@ class Site extends EventEmitter {
             }
             next()
           },
-          next => {
+          (next) => {
             this.emit(this.EVENTS.XHR_WILL_TRANSITION_WIDGETS_IN)
 
             if (this.xhrOptions.autoScrollRestore) this.restoreScroll()
@@ -1050,10 +1056,10 @@ class Site extends EventEmitter {
 
   preloadWidgets(targetEl, callback) {
     const promises = this.getAllWidgets(targetEl)
-      .filter(widget => widget._preloadWidget)
-      .map(widget => {
+      .filter((widget) => widget._preloadWidget)
+      .map((widget) => {
         // Create a 'promise to load'
-        widget.__promiseToLoad = new Promise(resolve => {
+        widget.__promiseToLoad = new Promise((resolve) => {
           try {
             widget._preloadWidget(() => {
               resolve()
@@ -1067,7 +1073,7 @@ class Site extends EventEmitter {
       })
     Promise.all(promises)
       .then(callback)
-      .catch(err => callback())
+      .catch((err) => callback())
   }
 
   generateReplaceState(s) {
@@ -1201,7 +1207,7 @@ class Site extends EventEmitter {
     }
 
     // Handle browser back button
-    window.addEventListener('popstate', e => {
+    window.addEventListener('popstate', (e) => {
       if (e.state) {
         let wasDefaultPrevented = false
         e.preventDefault = () => {
@@ -1260,7 +1266,7 @@ class Site extends EventEmitter {
         }
       }
 
-      linkEl.click(e => {
+      linkEl.click((e) => {
         if (!e.metaKey && !e.ctrlKey) {
           this.emit(this.EVENTS.XHR_LINK_CLICK, e, $(linkEl))
           // A dev can use e.preventDefault() to also prevent any XHR transitions!
@@ -1298,7 +1304,7 @@ class Site extends EventEmitter {
         url: '/json-api/' + method,
         data: JSON.stringify(args),
         dataType: 'json',
-        success: response => {
+        success: (response) => {
           if (callback) callback(response.error, response.result)
           if (response.error) {
             reject(response.error)

@@ -1251,10 +1251,10 @@ class Site extends EventEmitter {
         // Link is a file
         return
       }
-      if (url.match(/\#/)) {
-        // link contains a hashbang
-        return
-      }
+      // if (url.match(/\#/)) {
+      //   // link contains a hashbang
+      //   return
+      // }
 
       if (this.xhrOptions.cachePages) {
         if (

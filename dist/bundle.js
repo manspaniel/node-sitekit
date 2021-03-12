@@ -14255,12 +14255,11 @@ function (_EventEmitter) {
         if (url.match(/\.[a-z]$/i) || url.match(/(mailto|tel):/i)) {
           // Link is a file
           return;
-        }
+        } // if (url.match(/\#/)) {
+        //   // link contains a hashbang
+        //   return
+        // }
 
-        if (url.match(/\#/)) {
-          // link contains a hashbang
-          return;
-        }
 
         if (_this13.xhrOptions.cachePages) {
           if (!linkEl.data('no-preload') && linkEl.parents('[data-no-preload]').length === 0) {

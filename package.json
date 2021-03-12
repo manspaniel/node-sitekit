@@ -1,6 +1,6 @@
 {
   "name": "sitekit",
-  "version": "1.2.25",
+  "version": "1.2.26",
   "description": "A lil sugar for connecting jQuery widgets to your markup",
   "main": "index.js",
   "scripts": {
